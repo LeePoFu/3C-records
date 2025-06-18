@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>開侖三顆星得分紀錄</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#ffffff" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; margin: 0; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid #999; padding: 8px; text-align: center; }
+    input[type="number"], input[type="text"], input[type="date"], input[type="time"] {
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+      padding: 8px;
+      font-size: 1em;
+    }
+    .summary, .meta-info { font-size: 1.2em; margin-top: 20px; }
+    .meta-info input { max-width: 300px; margin-bottom: 10px; }
+    button { padding: 10px 20px; font-size: 1em; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>開侖三顆星得分紀錄</h1>
+
+  <div class="meta-info">
+    日期：<input type="date" id="gameDate"><br>
+    時間：<input type="time" id="gameTime"><br>
+    地點：<input type="text" id="venue" placeholder="請輸入比賽地點"><br>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>輪次 (Inn)</th>
+        <th>得分 (Points)</th>
+      </tr>
+    </thead>
+    <tbody id="scoreTable"></tbody>
+  </table>
+
+  <button onclick="addRows(10)">增加 10 輪</button>
+
+  <div class="summary">
+    總得分：<span id="totalPoints">0</span><br>
+    杆數：<span id="totalShots">0</span><br>
+    得分率：<span id="scoreRate">0.000</span>
+  </div>
+
+  <button onclick="exportXLSX()">匯出為 Excel (.xlsx)</button>
+
+  <script>
+    const scoreTable = document.getElementById('scoreTable');
+    const totalPointsEl = document.getElementById('totalPoints');
+    const totalShotsEl = document.getElementById('totalShots');
+    const scoreRateEl = document.getElementById('scoreRate');
+    let currentInn = 1;
+
+    function addRows(count) {
+      for (let i = 0; i < count; i++) {
+        const row = document.createElement('tr');
+        const innCell = document.createElement('td');
+        innCell.textContent = currentInn;
+
+        const pointCell = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = 0;
+        input.addEventListener('input', updateScores);
+        pointCell.appendChild(input);
+
+        row.appendChild(innCell);
+        row.appendChild(pointCell);
+        scoreTable.appendChild(row);
+        currentInn++;
+      }
+    }
+
+    function updateScores() {
+      let totalPoints = 0;
+      let totalShots = 0;
+      document.querySelectorAll('#scoreTable input').forEach(input => {
+        const val = parseInt(input.value, 10);
+        if (!isNaN(val)) {
+          totalPoints += val;
+          totalShots++;
+        }
+      });
+      const rate = totalShots ? (totalPoints / totalShots).toFixed(3) : '0.000';
+      totalPointsEl.textContent = totalPoints;
+      totalShotsEl.textContent = totalShots;
+      scoreRateEl.textContent = rate;
+    }
+
+    function exportXLSX() {
+      const date = document.getElementById('gameDate').value;
+      const time = document.getElementById('gameTime').value;
+      const venue = document.getElementById('venue').value;
+
+      const data = [
+        ['日期', date],
+        ['時間', time],
+        ['地點', venue],
+        [],
+        ['輪次', '得分']
+      ];
+
+      document.querySelectorAll('#scoreTable tr').forEach((tr, i) => {
+        const val = tr.querySelector('input').value || '';
+        data.push([i + 1, val]);
+      });
+
+      data.push([]);
+      data.push(['總得分', totalPointsEl.textContent]);
+      data.push(['杆數', totalShotsEl.textContent]);
+      data.push(['得分率', scoreRateEl.textContent]);
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "紀錄");
+
+      XLSX.writeFile(wb, `得分紀錄_${date || '未填'}.xlsx`);
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+      });
+    }
+
+    // 初始化預設30輪
+    window.addEventListener('DOMContentLoaded', () => addRows(30));
+  </script>
+</body>
+</html>
