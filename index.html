@@ -2,41 +2,94 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>3-Cushion Training Log v1</title>
+  <title>3-Cushion Training System</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0f766e" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    :root{--primary:#0f766e;--primary-dark:#115e59;--danger:#dc2626;--gray:#64748b;--light:#f1f5f9;--border:#cbd5e1;--text:#0f172a;--white:#fff}*{box-sizing:border-box}body{margin:0;padding:14px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:#f8fafc;color:var(--text)}header,main{max-width:860px;margin:0 auto}header{padding:14px 4px}h1{margin:0;font-size:1.45rem}.subtitle{margin-top:4px;color:var(--gray);font-size:.95rem}.card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(15,23,42,.04)}h2{margin:0 0 12px;font-size:1.1rem}label{display:block;font-weight:700;font-size:.92rem;margin-bottom:5px}input[type=date],input[type=time],input[type=text],input[type=number]{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:1rem;text-align:center;background:#fff}.grid-3{display:grid;grid-template-columns:1fr;gap:10px}.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.metric{padding:10px 8px;border-radius:12px;background:var(--light);text-align:center}.metric-label{color:var(--gray);font-size:.78rem;margin-bottom:4px}.metric-value{font-size:1.2rem;font-weight:800;word-break:break-word}.actions{display:grid;grid-template-columns:1fr;gap:9px;margin-top:12px}button{border:none;border-radius:12px;padding:13px 14px;font-size:1rem;font-weight:800;color:#fff;background:var(--primary);cursor:pointer;min-height:48px}button:hover{background:var(--primary-dark)}button.secondary{background:var(--gray)}button.secondary:hover{background:#475569}button.light{background:var(--light);color:var(--text);border:1px solid var(--border)}button.light:hover{background:#e2e8f0}button.danger{background:var(--danger)}button.danger:hover{background:#b91c1c}table{width:100%;border-collapse:collapse;background:#fff}th,td{border:1px solid var(--border);padding:8px;text-align:center;font-size:.95rem}th{background:var(--light);font-weight:800}.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.score-input{font-size:1.15rem!important;min-height:46px}.history-actions{display:flex;gap:6px;justify-content:center;min-width:128px}.mini-btn{padding:7px 9px;min-height:auto;border-radius:8px;font-size:.82rem;width:auto}.note{color:var(--gray);font-size:.9rem;line-height:1.5;margin:8px 0 0}dialog{width:min(92vw,760px);border:none;border-radius:16px;padding:0;box-shadow:0 20px 50px rgba(15,23,42,.25)}dialog::backdrop{background:rgba(15,23,42,.45)}.modal-header{padding:14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}.modal-body{padding:14px;max-height:70vh;overflow:auto}.modal-title{font-weight:900;font-size:1.05rem}.close-btn{width:auto;min-height:auto;padding:8px 10px;background:var(--gray);border-radius:8px}@media(min-width:680px){body{padding:20px}.grid-3{grid-template-columns:repeat(3,1fr)}.actions{grid-template-columns:repeat(2,1fr)}.metric-value{font-size:1.35rem}}
-  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <header><h1>3-Cushion Training Log v1</h1><div class="subtitle">開侖三顆星訓練紀錄｜本機版</div></header>
+  <header><div class="header-inner"><h1>3-Cushion Training System</h1><div class="subtitle">Dashboard｜訓練總覽</div></div></header>
+  <nav><div class="nav-inner">
+    <a class="active" href="index.html">首頁</a>
+    <a href="game.html">新局</a>
+    <a href="history.html">歷史</a>
+    <a href="analytics.html">分析</a>
+    <a href="settings.html">設定</a>
+  </div></nav>
   <main>
-    <section class="card"><h2>本局資訊</h2><div class="grid-3"><div><label for="gameDate">日期</label><input type="date" id="gameDate"></div><div><label for="gameTime">時間</label><input type="time" id="gameTime"></div><div><label for="venue">地點</label><input type="text" id="venue" placeholder="例如：球館 / 桌號"></div></div></section>
-    <section class="card"><h2>本局統計</h2><div class="metric-grid"><div class="metric"><div class="metric-label">總得分</div><div class="metric-value" id="totalPoints">0</div></div><div class="metric"><div class="metric-label">杆數</div><div class="metric-value" id="totalShots">0</div></div><div class="metric"><div class="metric-label">得分率</div><div class="metric-value" id="scoreRate">0.000</div></div></div><div class="actions"><button onclick="finishGame()">完成本局</button><button class="secondary" onclick="addRows(10)">增加 10 輪</button><button class="light" onclick="exportCurrentGameXLSX()">匯出本局 Excel</button><button class="danger" onclick="clearCurrentGame()">清空本局</button></div><p class="note">按「完成本局」後，會將目前已輸入得分的局數存入歷史紀錄，並自動開啟新局。</p></section>
-    <section class="card"><h2>歷史統計</h2><div class="metric-grid"><div class="metric"><div class="metric-label">總局數</div><div class="metric-value" id="historyGames">0</div></div><div class="metric"><div class="metric-label">總得分</div><div class="metric-value" id="historyPoints">0</div></div><div class="metric"><div class="metric-label">總杆數</div><div class="metric-value" id="historyShots">0</div></div></div><div class="metric-grid" style="margin-top:8px;"><div class="metric"><div class="metric-label">總 AVG</div><div class="metric-value" id="historyAvg">0.000</div></div><div class="metric"><div class="metric-label">最近 10 局 AVG</div><div class="metric-value" id="recent10Avg">0.000</div></div><div class="metric"><div class="metric-label">最高單局 AVG</div><div class="metric-value" id="bestAvg">0.000</div></div></div><div class="actions"><button class="light" onclick="exportAllHistoryXLSX()">匯出全部歷史 Excel</button><button class="danger" onclick="clearAllHistory()">清除全部歷史</button></div><p class="note">歷史紀錄目前儲存在此裝置瀏覽器的 localStorage。更換手機或清除網站資料後，紀錄不會自動保留。</p></section>
-    <section class="card"><h2>歷史紀錄</h2><div class="table-wrap"><table><thead><tr><th>#</th><th>日期</th><th>時間</th><th>地點</th><th>得分</th><th>杆數</th><th>AVG</th><th>操作</th></tr></thead><tbody id="historyTable"></tbody></table></div></section>
-    <section class="card"><h2>得分輸入</h2><div class="table-wrap"><table><thead><tr><th>輪次</th><th>得分</th></tr></thead><tbody id="scoreTable"></tbody></table></div></section>
+    <section class="card">
+      <h2>快速操作</h2>
+      <div class="actions">
+        <a class="button-link" href="game.html">開始新局</a>
+        <a class="button-link light" href="analytics.html">查看分析</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>總覽統計</h2>
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-label">總局數</div><div class="metric-value" id="totalGames">0</div></div>
+        <div class="metric"><div class="metric-label">總 AVG</div><div class="metric-value" id="overallAvg">0.000</div></div>
+        <div class="metric"><div class="metric-label">最近 10 局 AVG</div><div class="metric-value" id="recent10Avg">0.000</div></div>
+        <div class="metric"><div class="metric-label">High Run</div><div class="metric-value" id="highRun">0</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>近 20 局 AVG 趨勢</h2>
+      <div class="chart-box"><canvas id="avgChart"></canvas></div>
+      <p class="note">若尚未有歷史紀錄，圖表會暫時空白。</p>
+    </section>
+
+    <section class="card">
+      <h2>最近 5 局</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>日期</th><th>地點</th><th>得分</th><th>杆數</th><th>AVG</th></tr></thead>
+          <tbody id="recentTable"></tbody>
+        </table>
+      </div>
+    </section>
   </main>
-  <dialog id="detailDialog"><div class="modal-header"><div class="modal-title" id="detailTitle">本局明細</div><button class="close-btn" onclick="closeDetail()">關閉</button></div><div class="modal-body" id="detailBody"></div></dialog>
+  <script src="js/common.js"></script>
   <script>
-    const STORAGE_KEY="threeCushionTrainingLog_v1";const scoreTable=document.getElementById("scoreTable"),totalPointsEl=document.getElementById("totalPoints"),totalShotsEl=document.getElementById("totalShots"),scoreRateEl=document.getElementById("scoreRate"),historyGamesEl=document.getElementById("historyGames"),historyPointsEl=document.getElementById("historyPoints"),historyShotsEl=document.getElementById("historyShots"),historyAvgEl=document.getElementById("historyAvg"),recent10AvgEl=document.getElementById("recent10Avg"),bestAvgEl=document.getElementById("bestAvg"),historyTable=document.getElementById("historyTable"),detailDialog=document.getElementById("detailDialog"),detailTitle=document.getElementById("detailTitle"),detailBody=document.getElementById("detailBody");let currentInn=1;
-    function setDefaultDateTime(){const e=new Date,t=e.getFullYear(),n=String(e.getMonth()+1).padStart(2,"0"),r=String(e.getDate()).padStart(2,"0"),o=String(e.getHours()).padStart(2,"0"),a=String(e.getMinutes()).padStart(2,"0");document.getElementById("gameDate").value=`${t}-${n}-${r}`,document.getElementById("gameTime").value=`${o}:${a}`}
-    function addRows(e){for(let t=0;t<e;t++){const e=document.createElement("tr"),t=document.createElement("td");t.textContent=currentInn;const n=document.createElement("td"),r=document.createElement("input");r.type="number",r.min=0,r.inputMode="numeric",r.className="score-input",r.addEventListener("input",updateCurrentStats),n.appendChild(r),e.appendChild(t),e.appendChild(n),scoreTable.appendChild(e),currentInn++}}
-    function getCurrentScores(){return Array.from(document.querySelectorAll("#scoreTable input")).map((e,t)=>{const n=parseInt(e.value,10);return{inn:t+1,points:Number.isNaN(n)?"":n}})}
-    function calculateStats(e){const t=e.filter(e=>""!==e.points),n=t.reduce((e,t)=>e+Number(t.points),0),r=t.length,o=r?n/r:0;return{totalPoints:n,totalShots:r,avg:Number(o.toFixed(3))}}
-    function updateCurrentStats(){const e=calculateStats(getCurrentScores());totalPointsEl.textContent=e.totalPoints,totalShotsEl.textContent=e.totalShots,scoreRateEl.textContent=e.avg.toFixed(3)}
-    function buildCurrentRecord(){const e=getCurrentScores(),t=e.filter(e=>""!==e.points),n=calculateStats(e);return{id:Date.now(),createdAt:(new Date).toISOString(),date:document.getElementById("gameDate").value,time:document.getElementById("gameTime").value,venue:document.getElementById("venue").value.trim(),scores:t,totalPoints:n.totalPoints,totalShots:n.totalShots,avg:n.avg}}
-    function loadHistory(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch(e){return[]}}function saveHistory(e){localStorage.setItem(STORAGE_KEY,JSON.stringify(e)),renderHistory()}
-    function finishGame(){const e=buildCurrentRecord();if(0===e.totalShots)return void alert("目前尚未輸入任何得分，無法完成本局。");if(confirm(`確認完成本局？\n總得分：${e.totalPoints}\n杆數：${e.totalShots}\nAVG：${e.avg.toFixed(3)}`)){const t=loadHistory();t.push(e),saveHistory(t),resetCurrentGame()}}
-    function resetCurrentGame(){scoreTable.innerHTML="",currentInn=1,setDefaultDateTime(),addRows(30),updateCurrentStats(),window.scrollTo({top:0,behavior:"smooth"})}function clearCurrentGame(){confirm("確定要清空目前本局輸入？")&&resetCurrentGame()}function clearAllHistory(){confirm("確定要清除全部歷史紀錄？此動作無法復原。")&&(localStorage.removeItem(STORAGE_KEY),renderHistory())}function deleteGame(e){if(confirm("確定要刪除此局紀錄？")){const t=loadHistory().filter(t=>t.id!==e);saveHistory(t)}}
-    function renderHistory(){const e=loadHistory(),t=e.length,n=e.reduce((e,t)=>e+Number(t.totalPoints||0),0),r=e.reduce((e,t)=>e+Number(t.totalShots||0),0),o=r?n/r:0,a=e.slice(-10),i=a.reduce((e,t)=>e+Number(t.totalPoints||0),0),l=a.reduce((e,t)=>e+Number(t.totalShots||0),0),s=l?i/l:0,c=e.length?Math.max(...e.map(e=>Number(e.avg||0))):0;historyGamesEl.textContent=t,historyPointsEl.textContent=n,historyShotsEl.textContent=r,historyAvgEl.textContent=o.toFixed(3),recent10AvgEl.textContent=s.toFixed(3),bestAvgEl.textContent=c.toFixed(3),historyTable.innerHTML="";if(0===e.length)return void(historyTable.innerHTML='<tr><td colspan="8">尚無歷史紀錄</td></tr>');e.slice().reverse().forEach((t,n)=>{const r=e.length-n,o=document.createElement("tr");o.innerHTML=`<td>${r}</td><td>${escapeHTML(t.date||"")}</td><td>${escapeHTML(t.time||"")}</td><td>${escapeHTML(t.venue||"")}</td><td>${t.totalPoints||0}</td><td>${t.totalShots||0}</td><td>${Number(t.avg||0).toFixed(3)}</td><td><div class="history-actions"><button class="mini-btn light" onclick="showDetail(${t.id})">明細</button><button class="mini-btn danger" onclick="deleteGame(${t.id})">刪除</button></div></td>`,historyTable.appendChild(o)})}
-    function showDetail(e){const t=loadHistory(),n=t.findIndex(t=>t.id===e),r=t[n];if(!r)return;detailTitle.textContent=`第 ${n+1} 局｜${r.date||""} ${r.time||""}`;const o=(r.scores||[]).map(e=>`<tr><td>${e.inn}</td><td>${e.points}</td></tr>`).join("");detailBody.innerHTML=`<div class="metric-grid" style="margin-bottom:12px;"><div class="metric"><div class="metric-label">總得分</div><div class="metric-value">${r.totalPoints||0}</div></div><div class="metric"><div class="metric-label">杆數</div><div class="metric-value">${r.totalShots||0}</div></div><div class="metric"><div class="metric-label">AVG</div><div class="metric-value">${Number(r.avg||0).toFixed(3)}</div></div></div><p class="note">地點：${escapeHTML(r.venue||"未填")}</p><div class="table-wrap"><table><thead><tr><th>輪次</th><th>得分</th></tr></thead><tbody>${o||'<tr><td colspan="2">無逐輪資料</td></tr>'}</tbody></table></div>`,detailDialog.showModal()}function closeDetail(){detailDialog.close()}function escapeHTML(e){return String(e).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
-    function exportCurrentGameXLSX(){const e=buildCurrentRecord(),t=[["日期",e.date],["時間",e.time],["地點",e.venue],[],["輪次","得分"]];e.scores.forEach(e=>t.push([e.inn,e.points])),t.push([]),t.push(["總得分",e.totalPoints]),t.push(["杆數",e.totalShots]),t.push(["AVG",e.avg.toFixed(3)]);const n=XLSX.utils.book_new();XLSX.utils.book_append_sheet(n,XLSX.utils.aoa_to_sheet(t),"本局紀錄"),XLSX.writeFile(n,`三顆星本局_${e.date||"未填"}.xlsx`)}
-    function exportAllHistoryXLSX(){const e=loadHistory(),t=e.reduce((e,t)=>e+Number(t.totalPoints||0),0),n=e.reduce((e,t)=>e+Number(t.totalShots||0),0),r=n?t/n:0,o=e.slice(-10),a=o.reduce((e,t)=>e+Number(t.totalPoints||0),0),i=o.reduce((e,t)=>e+Number(t.totalShots||0),0),l=i?a/i:0,s=e.length?Math.max(...e.map(e=>Number(e.avg||0))):0,c=[["3-Cushion Training Log v1"],[],["總局數",e.length],["總得分",t],["總杆數",n],["總 AVG",r.toFixed(3)],["最近 10 局 AVG",l.toFixed(3)],["最高單局 AVG",s.toFixed(3)],[],["局數","日期","時間","地點","總得分","杆數","AVG"]];e.forEach((e,t)=>{c.push([t+1,e.date||"",e.time||"",e.venue||"",e.totalPoints||0,e.totalShots||0,Number(e.avg||0).toFixed(3)])});const d=[["局數","日期","時間","地點","輪次","得分"]];e.forEach((e,t)=>{(e.scores||[]).forEach(e=>{d.push([t+1,e.date||"",e.time||"",e.venue||"",e.inn,e.points])})});const u=XLSX.utils.book_new();XLSX.utils.book_append_sheet(u,XLSX.utils.aoa_to_sheet(c),"歷史總覽"),XLSX.utils.book_append_sheet(u,XLSX.utils.aoa_to_sheet(d),"逐輪明細"),XLSX.writeFile(u,"三顆星訓練歷史紀錄.xlsx")}
-    "serviceWorker"in navigator&&window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js")),window.addEventListener("DOMContentLoaded",()=>{setDefaultDateTime(),addRows(30),updateCurrentStats(),renderHistory()});
+    const history = loadHistory();
+    const stats = calculateHistoryStats(history);
+    document.getElementById("totalGames").textContent = stats.totalGames;
+    document.getElementById("overallAvg").textContent = stats.avg.toFixed(3);
+    document.getElementById("recent10Avg").textContent = stats.recent10Avg.toFixed(3);
+    document.getElementById("highRun").textContent = stats.highRun;
+
+    const recentTable = document.getElementById("recentTable");
+    if (history.length === 0) {
+      recentTable.innerHTML = '<tr><td colspan="6">尚無歷史紀錄</td></tr>';
+    } else {
+      history.slice(-5).reverse().forEach((game, idx) => {
+        const number = history.length - idx;
+        recentTable.innerHTML += `<tr><td>${number}</td><td>${escapeHTML(game.date || "")}</td><td>${escapeHTML(game.venue || "")}</td><td>${game.totalPoints || 0}</td><td>${game.totalShots || 0}</td><td>${Number(game.avg || 0).toFixed(3)}</td></tr>`;
+      });
+    }
+
+    const last20 = history.slice(-20);
+    new Chart(document.getElementById("avgChart"), {
+      type: "line",
+      data: {
+        labels: last20.map((_, i) => String(history.length - last20.length + i + 1)),
+        datasets: [{
+          label: "AVG",
+          data: last20.map(g => Number(g.avg || 0)),
+          tension: 0.25
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true } }
+      }
+    });
   </script>
 </body>
 </html>

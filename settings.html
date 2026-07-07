@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>設定與備份｜3CTS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f766e" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header><div class="header-inner"><h1>設定與備份</h1><div class="subtitle">JSON 備份、還原與資料管理</div></div></header>
+  <nav><div class="nav-inner">
+    <a href="index.html">首頁</a><a href="game.html">新局</a><a href="history.html">歷史</a><a href="analytics.html">分析</a><a class="active" href="settings.html">設定</a>
+  </div></nav>
+  <main>
+    <section class="card">
+      <h2>資料備份</h2>
+      <p class="note">建議定期匯出 JSON 備份。未來換手機或清除瀏覽器資料時，可用 JSON 匯入還原。</p>
+      <div class="actions">
+        <button onclick="exportJSON()">匯出 JSON 備份</button>
+        <button class="light" onclick="document.getElementById('importFile').click()">匯入 JSON 還原</button>
+      </div>
+      <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importJSON(event)">
+    </section>
+
+    <section class="card">
+      <h2>Excel 匯出</h2>
+      <div class="actions">
+        <button class="light" onclick="exportWorkbook('三顆星訓練歷史紀錄.xlsx', buildHistoryWorkbookData(loadHistory()))">匯出全部 Excel</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>資料狀態</h2>
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-label">目前局數</div><div class="metric-value" id="gameCount">0</div></div>
+        <div class="metric"><div class="metric-label">資料大小</div><div class="metric-value" id="dataSize">0 KB</div></div>
+      </div>
+    </section>
+  </main>
+  <script src="js/common.js"></script>
+  <script>
+    function refreshStatus() {
+      const raw = localStorage.getItem(STORAGE_KEY) || "[]";
+      document.getElementById("gameCount").textContent = loadHistory().length;
+      document.getElementById("dataSize").textContent = (new Blob([raw]).size / 1024).toFixed(1) + " KB";
+    }
+
+    function exportJSON() {
+      const data = {
+        app: "3-Cushion Training System",
+        version: "phase2-local",
+        exportedAt: new Date().toISOString(),
+        history: loadHistory()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "3c-training-backup.json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          const history = Array.isArray(data) ? data : data.history;
+          if (!Array.isArray(history)) throw new Error("格式錯誤");
+          if (!confirm(`將匯入 ${history.length} 筆紀錄，並覆蓋目前資料。確定嗎？`)) return;
+          saveHistory(history);
+          refreshStatus();
+          alert("匯入完成。");
+        } catch (err) {
+          alert("匯入失敗：JSON 格式不正確。");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    refreshStatus();
+  </script>
+</body>
+</html>

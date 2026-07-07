@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>歷史紀錄｜3CTS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f766e" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header><div class="header-inner"><h1>歷史紀錄</h1><div class="subtitle">查看、刪除與匯出每一局紀錄</div></div></header>
+  <nav><div class="nav-inner">
+    <a href="index.html">首頁</a><a href="game.html">新局</a><a class="active" href="history.html">歷史</a><a href="analytics.html">分析</a><a href="settings.html">設定</a>
+  </div></nav>
+  <main>
+    <section class="card">
+      <h2>歷史紀錄</h2>
+      <div class="actions">
+        <button class="light" onclick="exportAllHistory()">匯出全部 Excel</button>
+        <button class="danger" onclick="clearAllHistory()">清除全部歷史</button>
+      </div>
+      <div class="table-wrap" style="margin-top:12px;">
+        <table>
+          <thead><tr><th>#</th><th>日期</th><th>時間</th><th>地點</th><th>得分</th><th>杆數</th><th>AVG</th><th>操作</th></tr></thead>
+          <tbody id="historyTable"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="detailDialog">
+    <div class="modal-header"><div class="modal-title" id="detailTitle">明細</div><button class="close-btn" onclick="detailDialog.close()">關閉</button></div>
+    <div class="modal-body" id="detailBody"></div>
+  </dialog>
+
+  <script src="js/common.js"></script>
+  <script>
+    const historyTable = document.getElementById("historyTable");
+    const detailDialog = document.getElementById("detailDialog");
+    const detailTitle = document.getElementById("detailTitle");
+    const detailBody = document.getElementById("detailBody");
+
+    function renderHistory() {
+      const history = loadHistory();
+      historyTable.innerHTML = "";
+      if (history.length === 0) {
+        historyTable.innerHTML = '<tr><td colspan="8">尚無歷史紀錄</td></tr>';
+        return;
+      }
+      history.slice().reverse().forEach((game, reverseIndex) => {
+        const originalIndex = history.length - reverseIndex - 1;
+        const number = originalIndex + 1;
+        historyTable.innerHTML += `<tr>
+          <td>${number}</td><td>${escapeHTML(game.date || "")}</td><td>${escapeHTML(game.time || "")}</td><td>${escapeHTML(game.venue || "")}</td>
+          <td>${game.totalPoints || 0}</td><td>${game.totalShots || 0}</td><td>${Number(game.avg || 0).toFixed(3)}</td>
+          <td><div class="history-actions"><button class="mini-btn light" onclick="showDetail(${originalIndex})">明細</button><button class="mini-btn danger" onclick="deleteGame(${originalIndex})">刪除</button></div></td>
+        </tr>`;
+      });
+    }
+
+    function showDetail(index) {
+      const history = loadHistory();
+      const game = history[index];
+      if (!game) return;
+      detailTitle.textContent = `第 ${index + 1} 局｜${game.date || ""} ${game.time || ""}`;
+      const rows = (game.scores || []).map(s => `<tr><td>${s.inn}</td><td>${s.points}</td></tr>`).join("");
+      detailBody.innerHTML = `
+        <div class="metric-grid">
+          <div class="metric"><div class="metric-label">總得分</div><div class="metric-value">${game.totalPoints || 0}</div></div>
+          <div class="metric"><div class="metric-label">杆數</div><div class="metric-value">${game.totalShots || 0}</div></div>
+          <div class="metric"><div class="metric-label">AVG</div><div class="metric-value">${Number(game.avg || 0).toFixed(3)}</div></div>
+          <div class="metric"><div class="metric-label">High Run</div><div class="metric-value">${game.highRun || 0}</div></div>
+        </div>
+        <p class="note">地點：${escapeHTML(game.venue || "未填")}｜空杆率：${((game.zeroRate || 0) * 100).toFixed(1)}%</p>
+        <div class="table-wrap"><table><thead><tr><th>輪次</th><th>得分</th></tr></thead><tbody>${rows || '<tr><td colspan="2">無資料</td></tr>'}</tbody></table></div>
+      `;
+      detailDialog.showModal();
+    }
+
+    function deleteGame(index) {
+      if (!confirm("確定刪除此局？")) return;
+      const history = loadHistory();
+      history.splice(index, 1);
+      saveHistory(history);
+      renderHistory();
+    }
+
+    function clearAllHistory() {
+      if (!confirm("確定清除全部歷史？此動作無法復原。")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      renderHistory();
+    }
+
+    function exportAllHistory() {
+      exportWorkbook("三顆星訓練歷史紀錄.xlsx", buildHistoryWorkbookData(loadHistory()));
+    }
+
+    renderHistory();
+  </script>
+</body>
+</html>

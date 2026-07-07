@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>開始新局｜3CTS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f766e" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header><div class="header-inner"><h1>開始新局</h1><div class="subtitle">輸入每一輪得分，完成後存入歷史紀錄</div></div></header>
+  <nav><div class="nav-inner">
+    <a href="index.html">首頁</a><a class="active" href="game.html">新局</a><a href="history.html">歷史</a><a href="analytics.html">分析</a><a href="settings.html">設定</a>
+  </div></nav>
+  <main>
+    <section class="card">
+      <h2>本局資訊</h2>
+      <div class="grid-3">
+        <div><label for="gameDate">日期</label><input type="date" id="gameDate"></div>
+        <div><label for="gameTime">時間</label><input type="time" id="gameTime"></div>
+        <div><label for="venue">地點</label><input type="text" id="venue" placeholder="例如：球館 / 桌號"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>本局統計</h2>
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-label">總得分</div><div class="metric-value" id="totalPoints">0</div></div>
+        <div class="metric"><div class="metric-label">杆數</div><div class="metric-value" id="totalShots">0</div></div>
+        <div class="metric"><div class="metric-label">AVG</div><div class="metric-value" id="avg">0.000</div></div>
+        <div class="metric"><div class="metric-label">High Run</div><div class="metric-value" id="highRun">0</div></div>
+      </div>
+      <div class="actions">
+        <button onclick="finishGame()">完成本局</button>
+        <button class="secondary" onclick="addRows(10)">增加 10 輪</button>
+        <button class="light" onclick="exportCurrentGameXLSX()">匯出本局 Excel</button>
+        <button class="danger" onclick="clearCurrentGame()">清空本局</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>得分輸入</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>輪次</th><th>得分</th></tr></thead>
+          <tbody id="scoreTable"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="js/common.js"></script>
+  <script>
+    const scoreTable = document.getElementById("scoreTable");
+    let currentInn = 1;
+
+    function addRows(count) {
+      for (let i = 0; i < count; i++) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${currentInn}</td><td><input class="score-input" type="number" min="0" inputmode="numeric" oninput="updateCurrentStats()"></td>`;
+        scoreTable.appendChild(row);
+        currentInn++;
+      }
+    }
+
+    function getCurrentScores() {
+      return Array.from(document.querySelectorAll("#scoreTable input")).map((input, index) => {
+        const val = parseInt(input.value, 10);
+        return { inn: index + 1, points: Number.isNaN(val) ? "" : val };
+      });
+    }
+
+    function updateCurrentStats() {
+      const stats = calculateStatsFromScores(getCurrentScores());
+      document.getElementById("totalPoints").textContent = stats.totalPoints;
+      document.getElementById("totalShots").textContent = stats.totalShots;
+      document.getElementById("avg").textContent = stats.avg.toFixed(3);
+      document.getElementById("highRun").textContent = stats.highRun;
+    }
+
+    function buildRecord() {
+      const scores = getCurrentScores().filter(item => item.points !== "");
+      const stats = calculateStatsFromScores(scores);
+      return {
+        id: Date.now(),
+        createdAt: new Date().toISOString(),
+        date: document.getElementById("gameDate").value,
+        time: document.getElementById("gameTime").value,
+        venue: document.getElementById("venue").value.trim(),
+        scores,
+        totalPoints: stats.totalPoints,
+        totalShots: stats.totalShots,
+        avg: stats.avg,
+        highRun: stats.highRun,
+        zeroShots: stats.zeroShots,
+        zeroRate: stats.zeroRate
+      };
+    }
+
+    function finishGame() {
+      const record = buildRecord();
+      if (record.totalShots === 0) {
+        alert("尚未輸入得分，無法完成本局。");
+        return;
+      }
+      if (!confirm(`確認完成本局？\n總得分：${record.totalPoints}\n杆數：${record.totalShots}\nAVG：${record.avg.toFixed(3)}`)) return;
+      const history = loadHistory();
+      history.push(record);
+      saveHistory(history);
+      resetGame();
+      alert("已儲存本局紀錄。");
+    }
+
+    function clearCurrentGame() {
+      if (!confirm("確定要清空本局？")) return;
+      resetGame();
+    }
+
+    function resetGame() {
+      scoreTable.innerHTML = "";
+      currentInn = 1;
+      setDefaultDateTime();
+      addRows(30);
+      updateCurrentStats();
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    function exportCurrentGameXLSX() {
+      const game = buildRecord();
+      const data = [["日期", game.date], ["時間", game.time], ["地點", game.venue], [], ["輪次", "得分"]];
+      game.scores.forEach(item => data.push([item.inn, item.points]));
+      data.push([], ["總得分", game.totalPoints], ["杆數", game.totalShots], ["AVG", game.avg.toFixed(3)], ["High Run", game.highRun], ["空杆率", (game.zeroRate * 100).toFixed(1) + "%"]);
+      exportWorkbook(`三顆星本局_${game.date || "未填"}.xlsx`, [{ name: "本局紀錄", data }]);
+    }
+
+    window.addEventListener("DOMContentLoaded", resetGame);
+  </script>
+</body>
+</html>
