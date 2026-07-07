@@ -8,131 +8,540 @@
   <meta name="theme-color" content="#ffffff" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; margin: 0; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-    th, td { border: 1px solid #999; padding: 8px; text-align: center; }
-    input[type="number"], input[type="text"], input[type="date"], input[type="time"] {
+    :root {
+      --border: #d0d7de;
+      --bg: #f6f8fa;
+      --primary: #0969da;
+      --danger: #cf222e;
+      --text: #24292f;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 16px;
+      margin: 0;
+      color: var(--text);
+      background: #ffffff;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 16px;
+    }
+
+    h2 {
+      font-size: 1.15rem;
+      margin: 24px 0 10px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      background: #fff;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    input[type="date"],
+    input[type="time"] {
       width: 100%;
       box-sizing: border-box;
       text-align: center;
-      padding: 8px;
-      font-size: 1em;
+      padding: 12px;
+      font-size: 1.05rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
     }
-    .summary, .meta-info { font-size: 1.2em; margin-top: 20px; }
-    .meta-info input { max-width: 300px; margin-bottom: 10px; }
-    button { padding: 10px 20px; font-size: 1em; margin-top: 20px; }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: var(--bg);
+    }
+
+    .score-input {
+      font-size: 1.15rem !important;
+      min-height: 44px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .metric {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .metric .label {
+      font-size: 0.85rem;
+      color: #57606a;
+      margin-bottom: 4px;
+    }
+
+    .metric .value {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px 16px;
+      font-size: 1rem;
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #57606a;
+    }
+
+    button.danger {
+      background: var(--danger);
+    }
+
+    button.light {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .history-table-wrapper {
+      overflow-x: auto;
+    }
+
+    .small-note {
+      color: #57606a;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    @media (min-width: 640px) {
+      body { max-width: 760px; margin: 0 auto; }
+      .meta-grid { grid-template-columns: repeat(3, 1fr); }
+      .button-row { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
+
 <body>
   <h1>開侖三顆星得分紀錄</h1>
 
-  <div class="meta-info">
-    日期：<input type="date" id="gameDate"><br>
-    時間：<input type="time" id="gameTime"><br>
-    地點：<input type="text" id="venue" placeholder="請輸入比賽地點"><br>
-  </div>
+  <section class="card">
+    <div class="meta-grid">
+      <div>
+        <label for="gameDate">日期</label>
+        <input type="date" id="gameDate">
+      </div>
+      <div>
+        <label for="gameTime">時間</label>
+        <input type="time" id="gameTime">
+      </div>
+      <div>
+        <label for="venue">地點</label>
+        <input type="text" id="venue" placeholder="請輸入地點">
+      </div>
+    </div>
+  </section>
 
-  <table>
-    <thead>
-      <tr>
-        <th>輪次 (Inn)</th>
-        <th>得分 (Points)</th>
-      </tr>
-    </thead>
-    <tbody id="scoreTable"></tbody>
-  </table>
+  <section class="card">
+    <h2>本局統計</h2>
+    <div class="summary-grid">
+      <div class="metric">
+        <div class="label">總得分</div>
+        <div class="value" id="totalPoints">0</div>
+      </div>
+      <div class="metric">
+        <div class="label">杆數</div>
+        <div class="value" id="totalShots">0</div>
+      </div>
+      <div class="metric">
+        <div class="label">得分率</div>
+        <div class="value" id="scoreRate">0.000</div>
+      </div>
+    </div>
 
-  <button onclick="addRows(10)">增加 10 輪</button>
+    <div class="button-row">
+      <button onclick="startNewGame()">開始新局</button>
+      <button class="secondary" onclick="addRows(10)">增加 10 輪</button>
+      <button class="light" onclick="exportXLSX()">匯出 Excel</button>
+      <button class="danger" onclick="clearCurrentGame()">清空本局</button>
+    </div>
 
-  <div class="summary">
-    總得分：<span id="totalPoints">0</span><br>
-    杆數：<span id="totalShots">0</span><br>
-    得分率：<span id="scoreRate">0.000</span>
-  </div>
+    <p class="small-note">「開始新局」會先儲存目前已輸入的本局紀錄，再清空畫面開始下一局。歷史資料會儲存在此裝置的瀏覽器中。</p>
+  </section>
 
-  <button onclick="exportXLSX()">匯出為 Excel (.xlsx)</button>
+  <section class="card">
+    <h2>歷史總計</h2>
+    <div class="summary-grid">
+      <div class="metric">
+        <div class="label">歷史總得分</div>
+        <div class="value" id="historyPoints">0</div>
+      </div>
+      <div class="metric">
+        <div class="label">歷史總杆數</div>
+        <div class="value" id="historyShots">0</div>
+      </div>
+      <div class="metric">
+        <div class="label">歷史得分率</div>
+        <div class="value" id="historyRate">0.000</div>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button class="light" onclick="exportHistoryXLSX()">匯出歷史紀錄</button>
+      <button class="danger" onclick="clearHistory()">清除歷史紀錄</button>
+    </div>
+
+    <div class="history-table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>日期</th>
+            <th>時間</th>
+            <th>地點</th>
+            <th>得分</th>
+            <th>杆數</th>
+            <th>得分率</th>
+          </tr>
+        </thead>
+        <tbody id="historyTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>得分輸入</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>輪次 (Inn)</th>
+          <th>得分 (Points)</th>
+        </tr>
+      </thead>
+      <tbody id="scoreTable"></tbody>
+    </table>
+  </section>
 
   <script>
-    const scoreTable = document.getElementById('scoreTable');
-    const totalPointsEl = document.getElementById('totalPoints');
-    const totalShotsEl = document.getElementById('totalShots');
-    const scoreRateEl = document.getElementById('scoreRate');
+    const STORAGE_KEY = "threeCushionGameHistory_v1";
+
+    const scoreTable = document.getElementById("scoreTable");
+    const totalPointsEl = document.getElementById("totalPoints");
+    const totalShotsEl = document.getElementById("totalShots");
+    const scoreRateEl = document.getElementById("scoreRate");
+
+    const historyPointsEl = document.getElementById("historyPoints");
+    const historyShotsEl = document.getElementById("historyShots");
+    const historyRateEl = document.getElementById("historyRate");
+    const historyTable = document.getElementById("historyTable");
+
     let currentInn = 1;
+
+    function setDefaultDateTime() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mi = String(now.getMinutes()).padStart(2, "0");
+
+      document.getElementById("gameDate").value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById("gameTime").value = `${hh}:${mi}`;
+    }
 
     function addRows(count) {
       for (let i = 0; i < count; i++) {
-        const row = document.createElement('tr');
-        const innCell = document.createElement('td');
+        const row = document.createElement("tr");
+
+        const innCell = document.createElement("td");
         innCell.textContent = currentInn;
 
-        const pointCell = document.createElement('td');
-        const input = document.createElement('input');
-        input.type = 'number';
+        const pointCell = document.createElement("td");
+        const input = document.createElement("input");
+        input.type = "number";
         input.min = 0;
-        input.addEventListener('input', updateScores);
-        pointCell.appendChild(input);
+        input.inputMode = "numeric";
+        input.className = "score-input";
+        input.addEventListener("input", updateScores);
 
+        pointCell.appendChild(input);
         row.appendChild(innCell);
         row.appendChild(pointCell);
         scoreTable.appendChild(row);
+
         currentInn++;
       }
     }
 
-    function updateScores() {
-      let totalPoints = 0;
-      let totalShots = 0;
-      document.querySelectorAll('#scoreTable input').forEach(input => {
-        const val = parseInt(input.value, 10);
-        if (!isNaN(val)) {
-          totalPoints += val;
-          totalShots++;
-        }
+    function getCurrentScores() {
+      const scores = [];
+      document.querySelectorAll("#scoreTable input").forEach((input, index) => {
+        const raw = input.value;
+        const val = parseInt(raw, 10);
+        scores.push({
+          inn: index + 1,
+          points: Number.isNaN(val) ? "" : val
+        });
       });
-      const rate = totalShots ? (totalPoints / totalShots).toFixed(3) : '0.000';
-      totalPointsEl.textContent = totalPoints;
-      totalShotsEl.textContent = totalShots;
-      scoreRateEl.textContent = rate;
+      return scores;
+    }
+
+    function getFilledScores() {
+      return getCurrentScores().filter(item => item.points !== "");
+    }
+
+    function calculateFromScores(scores) {
+      const filled = scores.filter(item => item.points !== "");
+      const totalPoints = filled.reduce((sum, item) => sum + Number(item.points), 0);
+      const totalShots = filled.length;
+      const rate = totalShots ? (totalPoints / totalShots) : 0;
+      return { totalPoints, totalShots, rate };
+    }
+
+    function updateScores() {
+      const stats = calculateFromScores(getCurrentScores());
+      totalPointsEl.textContent = stats.totalPoints;
+      totalShotsEl.textContent = stats.totalShots;
+      scoreRateEl.textContent = stats.rate.toFixed(3);
+    }
+
+    function loadHistory() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveHistory(history) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      renderHistory();
+    }
+
+    function buildCurrentGameRecord() {
+      const scores = getCurrentScores();
+      const stats = calculateFromScores(scores);
+
+      return {
+        id: Date.now(),
+        date: document.getElementById("gameDate").value,
+        time: document.getElementById("gameTime").value,
+        venue: document.getElementById("venue").value,
+        scores: scores,
+        totalPoints: stats.totalPoints,
+        totalShots: stats.totalShots,
+        rate: Number(stats.rate.toFixed(3))
+      };
+    }
+
+    function startNewGame() {
+      const record = buildCurrentGameRecord();
+
+      if (record.totalShots > 0) {
+        const history = loadHistory();
+        history.push(record);
+        saveHistory(history);
+      }
+
+      resetCurrentGame();
+    }
+
+    function resetCurrentGame() {
+      scoreTable.innerHTML = "";
+      currentInn = 1;
+      addRows(30);
+      setDefaultDateTime();
+      updateScores();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function clearCurrentGame() {
+      if (!confirm("確定要清空目前這一局嗎？尚未按「開始新局」的資料不會保留。")) return;
+      resetCurrentGame();
+    }
+
+    function clearHistory() {
+      if (!confirm("確定要清除所有歷史紀錄嗎？此動作無法復原。")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const history = loadHistory();
+
+      const totalPoints = history.reduce((sum, game) => sum + Number(game.totalPoints || 0), 0);
+      const totalShots = history.reduce((sum, game) => sum + Number(game.totalShots || 0), 0);
+      const rate = totalShots ? totalPoints / totalShots : 0;
+
+      historyPointsEl.textContent = totalPoints;
+      historyShotsEl.textContent = totalShots;
+      historyRateEl.textContent = rate.toFixed(3);
+
+      historyTable.innerHTML = "";
+
+      if (history.length === 0) {
+        const row = document.createElement("tr");
+        row.innerHTML = '<td colspan="7">尚無歷史紀錄</td>';
+        historyTable.appendChild(row);
+        return;
+      }
+
+      history.slice().reverse().forEach((game, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${history.length - index}</td>
+          <td>${game.date || ""}</td>
+          <td>${game.time || ""}</td>
+          <td>${escapeHTML(game.venue || "")}</td>
+          <td>${game.totalPoints || 0}</td>
+          <td>${game.totalShots || 0}</td>
+          <td>${Number(game.rate || 0).toFixed(3)}</td>
+        `;
+        historyTable.appendChild(row);
+      });
+    }
+
+    function escapeHTML(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
     function exportXLSX() {
-      const date = document.getElementById('gameDate').value;
-      const time = document.getElementById('gameTime').value;
-      const venue = document.getElementById('venue').value;
+      const record = buildCurrentGameRecord();
 
       const data = [
-        ['日期', date],
-        ['時間', time],
-        ['地點', venue],
+        ["日期", record.date],
+        ["時間", record.time],
+        ["地點", record.venue],
         [],
-        ['輪次', '得分']
+        ["輪次", "得分"]
       ];
 
-      document.querySelectorAll('#scoreTable tr').forEach((tr, i) => {
-        const val = tr.querySelector('input').value || '';
-        data.push([i + 1, val]);
+      record.scores.forEach(item => {
+        data.push([item.inn, item.points]);
       });
 
       data.push([]);
-      data.push(['總得分', totalPointsEl.textContent]);
-      data.push(['杆數', totalShotsEl.textContent]);
-      data.push(['得分率', scoreRateEl.textContent]);
+      data.push(["總得分", record.totalPoints]);
+      data.push(["杆數", record.totalShots]);
+      data.push(["得分率", record.rate.toFixed(3)]);
 
       const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "紀錄");
+      XLSX.utils.book_append_sheet(wb, ws, "本局紀錄");
 
-      XLSX.writeFile(wb, `得分紀錄_${date || '未填'}.xlsx`);
+      XLSX.writeFile(wb, `得分紀錄_${record.date || "未填"}.xlsx`);
     }
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js');
+    function exportHistoryXLSX() {
+      const history = loadHistory();
+
+      const summaryPoints = history.reduce((sum, game) => sum + Number(game.totalPoints || 0), 0);
+      const summaryShots = history.reduce((sum, game) => sum + Number(game.totalShots || 0), 0);
+      const summaryRate = summaryShots ? summaryPoints / summaryShots : 0;
+
+      const summaryData = [
+        ["歷史總得分", summaryPoints],
+        ["歷史總杆數", summaryShots],
+        ["歷史得分率", summaryRate.toFixed(3)],
+        ["總局數", history.length],
+        [],
+        ["局數", "日期", "時間", "地點", "總得分", "杆數", "得分率"]
+      ];
+
+      history.forEach((game, index) => {
+        summaryData.push([
+          index + 1,
+          game.date || "",
+          game.time || "",
+          game.venue || "",
+          game.totalPoints || 0,
+          game.totalShots || 0,
+          Number(game.rate || 0).toFixed(3)
+        ]);
+      });
+
+      const detailData = [["局數", "日期", "時間", "地點", "輪次", "得分"]];
+
+      history.forEach((game, gameIndex) => {
+        (game.scores || []).forEach(score => {
+          if (score.points !== "") {
+            detailData.push([
+              gameIndex + 1,
+              game.date || "",
+              game.time || "",
+              game.venue || "",
+              score.inn,
+              score.points
+            ]);
+          }
+        });
+      });
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), "歷史總覽");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detailData), "逐輪明細");
+
+      XLSX.writeFile(wb, "三顆星歷史得分紀錄.xlsx");
+    }
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js");
       });
     }
 
-    // 初始化預設30輪
-    window.addEventListener('DOMContentLoaded', () => addRows(30));
+    window.addEventListener("DOMContentLoaded", () => {
+      setDefaultDateTime();
+      addRows(30);
+      updateScores();
+      renderHistory();
+    });
   </script>
 </body>
 </html>
