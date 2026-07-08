@@ -22,6 +22,23 @@ function escapeHTML(text) {
     .replaceAll("'", "&#039;");
 }
 
+
+
+function getActivitySummary(game) {
+  const type = game.activityType || "";
+  const meta = game.activityMeta || {};
+  if (!type) return "";
+  if (type === "獨自練球") return `${type}｜${meta.practiceMode || ""}`;
+  if (type === "單打無賭注") return `${type}｜對手：${meta.opponentName || ""}`;
+  if (type === "單打有賭注") return `${type}｜對手：${meta.opponentName || ""}｜賭注：${meta.stakeAmount || ""}`;
+  if (type === "多人追分") {
+    const order = (meta.participants || []).map(p => `${p.order}.${p.name}`).join("、");
+    return `${type}｜賭注：${meta.stakeAmount || ""}｜${order}`;
+  }
+  if (type === "正式比賽") return `${type}｜${meta.competitionName || ""}｜對手：${meta.opponentName || ""}`;
+  return type;
+}
+
 function setDefaultDateTime() {
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -109,7 +126,7 @@ function buildHistoryWorkbookData(history) {
     ["空杆數", stats.zeroShots],
     ["空杆率", (stats.zeroRate * 100).toFixed(1) + "%"],
     [],
-    ["局數", "日期", "時間", "地點", "總得分", "杆數", "AVG", "High Run", "空杆數", "空杆率"]
+    ["局數", "日期", "時間", "地點", "活動類型", "活動資訊", "總得分", "杆數", "AVG", "High Run", "空杆數", "空杆率"]
   ];
 
   history.forEach((game, index) => {
@@ -118,6 +135,8 @@ function buildHistoryWorkbookData(history) {
       game.date || "",
       game.time || "",
       game.venue || "",
+      game.activityType || "",
+      getActivitySummary(game),
       game.totalPoints || 0,
       game.totalShots || 0,
       Number(game.avg || 0).toFixed(3),
@@ -127,7 +146,7 @@ function buildHistoryWorkbookData(history) {
     ]);
   });
 
-  const details = [["局數", "日期", "時間", "地點", "輪次", "得分"]];
+  const details = [["局數", "日期", "時間", "地點", "活動類型", "活動資訊", "輪次", "得分"]];
   history.forEach((game, index) => {
     (game.scores || []).forEach(score => {
       details.push([index + 1, game.date || "", game.time || "", game.venue || "", score.inn, score.points]);

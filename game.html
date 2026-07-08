@@ -22,119 +22,36 @@
         <div><label for="gameTime">時間</label><input type="time" id="gameTime"></div>
         <div><label for="venue">地點</label><input type="text" id="venue" placeholder="例如：球館 / 桌號"></div>
       </div>
-    </section>
-
-    <section class="card">
-      <h2>本局統計</h2>
-      <div class="metric-grid">
-        <div class="metric"><div class="metric-label">總得分</div><div class="metric-value" id="totalPoints">0</div></div>
-        <div class="metric"><div class="metric-label">杆數</div><div class="metric-value" id="totalShots">0</div></div>
-        <div class="metric"><div class="metric-label">AVG</div><div class="metric-value" id="avg">0.000</div></div>
-        <div class="metric"><div class="metric-label">High Run</div><div class="metric-value" id="highRun">0</div></div>
+      <h3>活動類型</h3>
+      <div class="grid-2">
+        <div><label for="activityType">活動類型</label><select id="activityType" onchange="updateActivityFields()">
+          <option value="獨自練球">獨自練球</option><option value="單打無賭注">單打無賭注</option><option value="單打有賭注">單打有賭注</option><option value="多人追分">多人追分</option><option value="正式比賽">正式比賽</option>
+        </select></div>
       </div>
-      <div class="actions">
-        <button onclick="finishGame()">完成本局</button>
-        <button class="secondary" onclick="addRows(10)">增加 10 輪</button>
-        <button class="light" onclick="exportCurrentGameXLSX()">匯出本局 Excel</button>
-        <button class="danger" onclick="clearCurrentGame()">清空本局</button>
-      </div>
+      <div id="practiceFields" class="grid-2" style="margin-top:10px;"><div><label for="practiceMode">練球模式</label><select id="practiceMode"><option value="單一母球">單一母球</option><option value="白黃交錯">白黃交錯</option><option value="任意母球">任意母球</option></select></div></div>
+      <div id="opponentFields" class="grid-2 hidden" style="margin-top:10px;"><div><label for="opponentName">對手姓名</label><input type="text" id="opponentName" placeholder="請輸入對手姓名"></div></div>
+      <div id="stakeFields" class="grid-2 hidden" style="margin-top:10px;"><div><label for="stakeAmount">賭注金額</label><input type="number" id="stakeAmount" min="0" inputmode="decimal" placeholder="請輸入金額"></div></div>
+      <div id="competitionFields" class="grid-2 hidden" style="margin-top:10px;"><div><label for="competitionName">比賽名稱</label><input type="text" id="competitionName" placeholder="請輸入比賽名稱"></div></div>
+      <div id="multiPlayerFields" class="hidden" style="margin-top:10px;"><label for="multiOpponentNames">參與者姓名</label><input type="text" id="multiOpponentNames" placeholder="請以逗號分隔，例如：柏甫, 小王, 小林" oninput="renderParticipantsOrder()"><p class="note">輸入姓名後，下方會產生打擊次序。若需要調整，請修改次序數字。</p><div id="participantsOrder" class="participants-list"></div></div>
     </section>
-
-    <section class="card">
-      <h2>得分輸入</h2>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>輪次</th><th>得分</th></tr></thead>
-          <tbody id="scoreTable"></tbody>
-        </table>
-      </div>
-    </section>
+    <section class="card"><h2>本局統計</h2><div class="metric-grid"><div class="metric"><div class="metric-label">總得分</div><div class="metric-value" id="totalPoints">0</div></div><div class="metric"><div class="metric-label">杆數</div><div class="metric-value" id="totalShots">0</div></div><div class="metric"><div class="metric-label">AVG</div><div class="metric-value" id="avg">0.000</div></div><div class="metric"><div class="metric-label">High Run</div><div class="metric-value" id="highRun">0</div></div></div><div class="actions"><button onclick="finishGame()">完成本局</button><button class="secondary" onclick="addRows(10)">增加 10 輪</button><button class="light" onclick="exportCurrentGameXLSX()">匯出本局 Excel</button><button class="danger" onclick="clearCurrentGame()">清空本局</button></div></section>
+    <section class="card"><h2>得分輸入</h2><div class="table-wrap"><table><thead><tr><th>輪次</th><th>得分</th></tr></thead><tbody id="scoreTable"></tbody></table></div></section>
   </main>
   <script src="js/common.js"></script>
   <script>
-    const scoreTable = document.getElementById("scoreTable");
-    let currentInn = 1;
-
-    function addRows(count) {
-      for (let i = 0; i < count; i++) {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${currentInn}</td><td><input class="score-input" type="number" min="0" inputmode="numeric" oninput="updateCurrentStats()"></td>`;
-        scoreTable.appendChild(row);
-        currentInn++;
-      }
-    }
-
-    function getCurrentScores() {
-      return Array.from(document.querySelectorAll("#scoreTable input")).map((input, index) => {
-        const val = parseInt(input.value, 10);
-        return { inn: index + 1, points: Number.isNaN(val) ? "" : val };
-      });
-    }
-
-    function updateCurrentStats() {
-      const stats = calculateStatsFromScores(getCurrentScores());
-      document.getElementById("totalPoints").textContent = stats.totalPoints;
-      document.getElementById("totalShots").textContent = stats.totalShots;
-      document.getElementById("avg").textContent = stats.avg.toFixed(3);
-      document.getElementById("highRun").textContent = stats.highRun;
-    }
-
-    function buildRecord() {
-      const scores = getCurrentScores().filter(item => item.points !== "");
-      const stats = calculateStatsFromScores(scores);
-      return {
-        id: Date.now(),
-        createdAt: new Date().toISOString(),
-        date: document.getElementById("gameDate").value,
-        time: document.getElementById("gameTime").value,
-        venue: document.getElementById("venue").value.trim(),
-        scores,
-        totalPoints: stats.totalPoints,
-        totalShots: stats.totalShots,
-        avg: stats.avg,
-        highRun: stats.highRun,
-        zeroShots: stats.zeroShots,
-        zeroRate: stats.zeroRate
-      };
-    }
-
-    function finishGame() {
-      const record = buildRecord();
-      if (record.totalShots === 0) {
-        alert("尚未輸入得分，無法完成本局。");
-        return;
-      }
-      if (!confirm(`確認完成本局？\n總得分：${record.totalPoints}\n杆數：${record.totalShots}\nAVG：${record.avg.toFixed(3)}`)) return;
-      const history = loadHistory();
-      history.push(record);
-      saveHistory(history);
-      resetGame();
-      alert("已儲存本局紀錄。");
-    }
-
-    function clearCurrentGame() {
-      if (!confirm("確定要清空本局？")) return;
-      resetGame();
-    }
-
-    function resetGame() {
-      scoreTable.innerHTML = "";
-      currentInn = 1;
-      setDefaultDateTime();
-      addRows(30);
-      updateCurrentStats();
-      window.scrollTo({top:0, behavior:"smooth"});
-    }
-
-    function exportCurrentGameXLSX() {
-      const game = buildRecord();
-      const data = [["日期", game.date], ["時間", game.time], ["地點", game.venue], [], ["輪次", "得分"]];
-      game.scores.forEach(item => data.push([item.inn, item.points]));
-      data.push([], ["總得分", game.totalPoints], ["杆數", game.totalShots], ["AVG", game.avg.toFixed(3)], ["High Run", game.highRun], ["空杆率", (game.zeroRate * 100).toFixed(1) + "%"]);
-      exportWorkbook(`三顆星本局_${game.date || "未填"}.xlsx`, [{ name: "本局紀錄", data }]);
-    }
-
-    window.addEventListener("DOMContentLoaded", resetGame);
+    const scoreTable = document.getElementById("scoreTable"); let currentInn = 1;
+    function updateActivityFields(){const type=document.getElementById("activityType").value;document.getElementById("practiceFields").classList.toggle("hidden",type!=="獨自練球");document.getElementById("opponentFields").classList.toggle("hidden",!["單打無賭注","單打有賭注","正式比賽"].includes(type));document.getElementById("stakeFields").classList.toggle("hidden",!["單打有賭注","多人追分"].includes(type));document.getElementById("competitionFields").classList.toggle("hidden",type!=="正式比賽");document.getElementById("multiPlayerFields").classList.toggle("hidden",type!=="多人追分");if(type==="多人追分")renderParticipantsOrder();}
+    function renderParticipantsOrder(){const names=document.getElementById("multiOpponentNames").value.split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean);const box=document.getElementById("participantsOrder");box.innerHTML="";names.forEach((name,index)=>{const row=document.createElement("div");row.className="participant-row";row.innerHTML=`<input type="number" min="1" value="${index+1}" data-name="${escapeHTML(name)}"><div>${escapeHTML(name)}</div>`;box.appendChild(row);});}
+    function getActivityMeta(){const type=document.getElementById("activityType").value;if(type==="獨自練球")return{practiceMode:document.getElementById("practiceMode").value};if(type==="單打無賭注")return{opponentName:document.getElementById("opponentName").value.trim()};if(type==="單打有賭注")return{opponentName:document.getElementById("opponentName").value.trim(),stakeAmount:document.getElementById("stakeAmount").value};if(type==="多人追分"){const participants=Array.from(document.querySelectorAll("#participantsOrder input")).map(input=>({name:input.dataset.name,order:Number(input.value)||0})).sort((a,b)=>a.order-b.order);return{stakeAmount:document.getElementById("stakeAmount").value,participants};}if(type==="正式比賽")return{competitionName:document.getElementById("competitionName").value.trim(),opponentName:document.getElementById("opponentName").value.trim()};return{};}
+    function addRows(count){for(let i=0;i<count;i++){const row=document.createElement("tr");row.innerHTML=`<td>${currentInn}</td><td><input class="score-input" type="number" min="0" inputmode="numeric" oninput="updateCurrentStats()"></td>`;scoreTable.appendChild(row);currentInn++;}}
+    function getCurrentScores(){return Array.from(document.querySelectorAll("#scoreTable input")).map((input,index)=>{const val=parseInt(input.value,10);return{inn:index+1,points:Number.isNaN(val)?"":val};});}
+    function updateCurrentStats(){const stats=calculateStatsFromScores(getCurrentScores());document.getElementById("totalPoints").textContent=stats.totalPoints;document.getElementById("totalShots").textContent=stats.totalShots;document.getElementById("avg").textContent=stats.avg.toFixed(3);document.getElementById("highRun").textContent=stats.highRun;}
+    function buildRecord(){const scores=getCurrentScores().filter(item=>item.points!=="");const stats=calculateStatsFromScores(scores);return{id:Date.now(),createdAt:new Date().toISOString(),date:document.getElementById("gameDate").value,time:document.getElementById("gameTime").value,venue:document.getElementById("venue").value.trim(),activityType:document.getElementById("activityType").value,activityMeta:getActivityMeta(),scores,totalPoints:stats.totalPoints,totalShots:stats.totalShots,avg:stats.avg,highRun:stats.highRun,zeroShots:stats.zeroShots,zeroRate:stats.zeroRate};}
+    function finishGame(){const record=buildRecord();if(record.totalShots===0){alert("尚未輸入得分，無法完成本局。");return;}if(!confirm(`確認完成本局？\n活動：${record.activityType}\n總得分：${record.totalPoints}\n杆數：${record.totalShots}\nAVG：${record.avg.toFixed(3)}`))return;const history=loadHistory();history.push(record);saveHistory(history);resetGame();alert("已儲存本局紀錄。");}
+    function clearCurrentGame(){if(!confirm("確定要清空本局？"))return;resetGame();}
+    function resetGame(){scoreTable.innerHTML="";currentInn=1;setDefaultDateTime();addRows(30);updateCurrentStats();updateActivityFields();window.scrollTo({top:0,behavior:"smooth"});}
+    function exportCurrentGameXLSX(){const game=buildRecord();const data=[["日期",game.date],["時間",game.time],["地點",game.venue],["活動類型",game.activityType],["活動資訊",getActivitySummary(game)],[],["輪次","得分"]];game.scores.forEach(item=>data.push([item.inn,item.points]));data.push([], ["總得分",game.totalPoints], ["杆數",game.totalShots], ["AVG",game.avg.toFixed(3)], ["High Run",game.highRun], ["空杆率",(game.zeroRate*100).toFixed(1)+"%"]);exportWorkbook(`三顆星本局_${game.date||"未填"}.xlsx`,[{name:"本局紀錄",data}]);}
+    window.addEventListener("DOMContentLoaded",resetGame);
   </script>
 </body>
 </html>

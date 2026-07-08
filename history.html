@@ -23,7 +23,7 @@
       </div>
       <div class="table-wrap" style="margin-top:12px;">
         <table>
-          <thead><tr><th>#</th><th>日期</th><th>時間</th><th>地點</th><th>得分</th><th>杆數</th><th>AVG</th><th>操作</th></tr></thead>
+          <thead><tr><th>#</th><th>日期</th><th>地點</th><th>活動</th><th>得分</th><th>杆數</th><th>AVG</th><th>操作</th></tr></thead>
           <tbody id="historyTable"></tbody>
         </table>
       </div>
@@ -53,7 +53,7 @@
         const originalIndex = history.length - reverseIndex - 1;
         const number = originalIndex + 1;
         historyTable.innerHTML += `<tr>
-          <td>${number}</td><td>${escapeHTML(game.date || "")}</td><td>${escapeHTML(game.time || "")}</td><td>${escapeHTML(game.venue || "")}</td>
+          <td>${number}</td><td>${escapeHTML(game.date || "")}</td><td>${escapeHTML(game.venue || "")}</td><td>${escapeHTML(game.activityType || "")}</td>
           <td>${game.totalPoints || 0}</td><td>${game.totalShots || 0}</td><td>${Number(game.avg || 0).toFixed(3)}</td>
           <td><div class="history-actions"><button class="mini-btn light" onclick="showDetail(${originalIndex})">明細</button><button class="mini-btn danger" onclick="deleteGame(${originalIndex})">刪除</button></div></td>
         </tr>`;
@@ -73,7 +73,7 @@
           <div class="metric"><div class="metric-label">AVG</div><div class="metric-value">${Number(game.avg || 0).toFixed(3)}</div></div>
           <div class="metric"><div class="metric-label">High Run</div><div class="metric-value">${game.highRun || 0}</div></div>
         </div>
-        <p class="note">地點：${escapeHTML(game.venue || "未填")}｜空杆率：${((game.zeroRate || 0) * 100).toFixed(1)}%</p>
+        <p class="note">地點：${escapeHTML(game.venue || "未填")}</p><p class="note">活動：${escapeHTML(getActivitySummary(game) || "未填")}</p><p class="note">空杆率：${((game.zeroRate || 0) * 100).toFixed(1)}%</p>
         <div class="table-wrap"><table><thead><tr><th>輪次</th><th>得分</th></tr></thead><tbody>${rows || '<tr><td colspan="2">無資料</td></tr>'}</tbody></table></div>
       `;
       detailDialog.showModal();

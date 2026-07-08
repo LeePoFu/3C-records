@@ -36,6 +36,16 @@
     </section>
 
     <section class="card">
+      <h2>活動類型分析</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>活動類型</th><th>局數</th><th>總得分</th><th>杆數</th><th>AVG</th></tr></thead>
+          <tbody id="activityTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
       <h2>地點分析</h2>
       <div class="table-wrap">
         <table>
@@ -76,6 +86,24 @@
     document.getElementById("distribution").innerHTML = Object.entries(counts).map(([label, count]) => `
       <div class="bar-row"><div>${label}分</div><div class="bar-track"><div class="bar-fill" style="width:${count/maxCount*100}%"></div></div><div>${count}</div></div>
     `).join("");
+
+    function renderGroupTable(key, tableId, emptyLabel) {
+      const map = {};
+      history.forEach(g => {
+        const group = g[key] || emptyLabel;
+        if (!map[group]) map[group] = { games:0, points:0, shots:0 };
+        map[group].games++;
+        map[group].points += Number(g.totalPoints || 0);
+        map[group].shots += Number(g.totalShots || 0);
+      });
+      const rows = Object.entries(map)
+        .sort((a,b) => b[1].games - a[1].games)
+        .map(([name, v]) => `<tr><td>${escapeHTML(name)}</td><td>${v.games}</td><td>${v.points}</td><td>${v.shots}</td><td>${v.shots ? (v.points/v.shots).toFixed(3) : "0.000"}</td></tr>`)
+        .join("");
+      document.getElementById(tableId).innerHTML = rows || '<tr><td colspan="5">尚無資料</td></tr>';
+    }
+
+    renderGroupTable("activityType", "activityTable", "未填");
 
     const venueMap = {};
     history.forEach(g => {

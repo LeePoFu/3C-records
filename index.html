@@ -48,7 +48,7 @@
       <h2>最近 5 局</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>日期</th><th>地點</th><th>得分</th><th>杆數</th><th>AVG</th></tr></thead>
+          <thead><tr><th>#</th><th>日期</th><th>地點</th><th>活動</th><th>得分</th><th>杆數</th><th>AVG</th></tr></thead>
           <tbody id="recentTable"></tbody>
         </table>
       </div>
@@ -65,11 +65,11 @@
 
     const recentTable = document.getElementById("recentTable");
     if (history.length === 0) {
-      recentTable.innerHTML = '<tr><td colspan="6">尚無歷史紀錄</td></tr>';
+      recentTable.innerHTML = '<tr><td colspan="7">尚無歷史紀錄</td></tr>';
     } else {
       history.slice(-5).reverse().forEach((game, idx) => {
         const number = history.length - idx;
-        recentTable.innerHTML += `<tr><td>${number}</td><td>${escapeHTML(game.date || "")}</td><td>${escapeHTML(game.venue || "")}</td><td>${game.totalPoints || 0}</td><td>${game.totalShots || 0}</td><td>${Number(game.avg || 0).toFixed(3)}</td></tr>`;
+        recentTable.innerHTML += `<tr><td>${number}</td><td>${escapeHTML(game.date || "")}</td><td>${escapeHTML(game.venue || "")}</td><td>${escapeHTML(game.activityType || "")}</td><td>${game.totalPoints || 0}</td><td>${game.totalShots || 0}</td><td>${Number(game.avg || 0).toFixed(3)}</td></tr>`;
       });
     }
 
