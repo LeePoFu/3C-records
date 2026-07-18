@@ -115,9 +115,9 @@
   <button type="button" class="cancel-full scoring-action" onclick="cancelGame()">取消本局</button>
 </div></section>
 
-<section class="card hidden secondary-info" id="list"><h2>已記錄出杆</h2>
+<section class="card hidden secondary-info" id="list"><h2>已記錄出杆</h2><p class="note">每列代表一個 inning／整杆。「本杆時間」是從該球員開始本杆，到按下下一杆、下一位或換對手為止的有效時間；單顆擊球時間另存於節奏分析。</p>
 <div class="score-history" id="chips"></div>
-<div class="table"><table><thead><tr><th>杆次</th><th>得分</th><th>單次時間</th><th>累積分</th><th>AVG</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
+<div class="table"><table><thead><tr><th>杆次</th><th>得分</th><th>本杆時間</th><th>累積分</th><th>AVG</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
 
 <section class="hidden" id="duelSummaryCard"></section>
 <section class="card hidden" id="multiplayerBoardCard"><h2>多人追分記分板</h2><div class="scoreboard-list" id="multiplayerBoard"></div></section><section class="card hidden secondary-info" id="playerSummaryCard">
@@ -145,6 +145,7 @@ let actionTimingEvents=[];
 let isPaused=false;
 let pausedAt=0;
 let totalPausedMs=0;
+let quickInningStartedAt=0;
 const MAX_UNDO_STATES=100;
 
 function cloneScores(value){
@@ -227,6 +228,7 @@ function togglePause(){
    totalPausedMs+=pausedDuration;
    if(actionTimerAt)actionTimerAt+=pausedDuration;
    if(lastShotAt)lastShotAt+=pausedDuration;
+   if(quickInningStartedAt)quickInningStartedAt+=pausedDuration;
    isPaused=false;
    pausedAt=0;
    clearInterval(timer);
@@ -318,7 +320,7 @@ function startGame(){
    activeParticipantIndex=selectedIndex>=0?selectedIndex:0;
  }
 
- started=Date.now();lastShotAt=started;actionTimerAt=started;updatePauseButtons();
+ started=Date.now();lastShotAt=started;actionTimerAt=started;quickInningStartedAt=started;updatePauseButtons();
  clearInterval(timer);timer=setInterval(updateActiveClock,500);
  setup.classList.add('hidden');document.body.classList.toggle('pro-mode',professionalMode.checked);
 
@@ -353,7 +355,7 @@ function commitInn(){
  const now=Date.now();
  const shotTime=Math.max(0,Math.round((now-lastShotAt)/1000));
  const elapsed=seconds();
- scores.push({inn:scores.length+1,points:cp,shotTimeSeconds:shotTime,elapsedSeconds:elapsed});
+ scores.push({inn:scores.length+1,points:cp,shotTimeSeconds:shotTime,inningTimeSeconds:shotTime,elapsedSeconds:elapsed});
  resetActionTimer('完成本杆',{runPoints:cp,inn:scores.length});
  cp=0;lastShotAt=now;
  const s=stats(scores);
@@ -387,7 +389,8 @@ function captureQuickState(){
   quickRunPoints,
   quickScores:quickScores.map(x=>({...x})),
   activeParticipantIndex,
-  participantStats:JSON.parse(JSON.stringify(participantStats))
+  participantStats:JSON.parse(JSON.stringify(participantStats)),
+  quickInningStartedAt
  };
 }
 
@@ -424,28 +427,36 @@ function setQuickRun(value){
 
 function commitQuickRun(){
  if(isPaused)return;
+
  const currentParticipant=participants[activeParticipantIndex];
  if(!currentParticipant)return;
 
- const now=Date.now();
- const elapsed=seconds();
  const completedPlayerName=currentParticipant.name;
  const completedPoints=quickRunPoints;
+ const now=Date.now();
+ const elapsed=seconds();
+ const inningTimeSeconds=quickInningStartedAt
+   ?Math.max(0,Math.round((now-quickInningStartedAt)/1000))
+   :0;
 
- pushQuickUndoState();
+ // 使用現有且正確的 undo 函式。
+ pushQuickUndo();
 
  const common={
    inn:quickScores.length+1,
    points:completedPoints,
    elapsedSeconds:elapsed,
-   shotTimeSeconds:null,
+   shotTimeSeconds:inningTimeSeconds,
+   inningTimeSeconds,
    playerName:completedPlayerName
  };
 
+ // 先更新總紀錄與該球員統計。
  quickScores.push(common);
 
  if(activityType.value==='多人追分'||duelMode){
    const ps=participantStats[completedPlayerName];
+   if(!ps)return;
    ps.scores.push({...common});
    ps.totalPoints+=completedPoints;
    ps.totalShots+=1;
@@ -454,26 +465,26 @@ function commitQuickRun(){
 
  resetActionTimer(
    duelMode?'換對手':(activityType.value==='多人追分'?'下一位':'完成本杆'),
-   {runPoints:completedPoints,completedPlayerName}
+   {runPoints:completedPoints,completedPlayerName,inningTimeSeconds}
  );
 
- // 先完成目前球員資料，再切換下一位，最後才重繪。
+ // 清空本杆分數，切換下一位，再重新開始下一杆計時。
  quickRunPoints=0;
 
  if(activityType.value==='多人追分'||duelMode){
    activeParticipantIndex=(activeParticipantIndex+1)%participants.length;
  }
 
+ quickInningStartedAt=Date.now();
+
  if(!quickReachedAt){
-   const reached=duelMode
-     ? participants.some(p=>(participantStats[p.name]?.totalPoints||0)>=Number(targetScore.value||30))
-     : activityType.value==='多人追分'
-       ? participants.some(p=>(participantStats[p.name]?.totalPoints||0)>=Number(targetScore.value||30))
-       : quickScores.reduce((sum,row)=>sum+Number(row.points||0),0)>=Number(targetScore.value||30);
+   const reached=(activityType.value==='多人追分'||duelMode)
+     ?participants.some(p=>(participantStats[p.name]?.totalPoints||0)>=Number(targetScore.value||30))
+     :quickScores.reduce((sum,row)=>sum+Number(row.points||0),0)>=Number(targetScore.value||30);
    if(reached)quickReachedAt=Date.now();
  }
 
- // 強制同一輪立即刷新目前球員、多人記分板、統計與紀錄。
+ // 同一輪立即更新目前球員、記分板、統計與表格。
  drawQuick();
  updateQuickUndoButton();
 }
@@ -486,6 +497,7 @@ function undoQuick(){
  quickScores=prev.quickScores.map(x=>({...x}));
  activeParticipantIndex=prev.activeParticipantIndex;
  participantStats=JSON.parse(JSON.stringify(prev.participantStats));
+ quickInningStartedAt=prev.quickInningStartedAt||Date.now();
  if(stats(quickScores).totalPoints<Number(targetScore.value)){
    reachedAt=0;quickReached.classList.add('hidden');
  }
@@ -544,9 +556,9 @@ function drawQuick(){
    cumulative+=Number(x.points);
    return{...x,cumulative,runAvg:cumulative/x.inn}
  });
- tbody.innerHTML=rows.slice().reverse().map(x=>`<tr><td>${x.inn}${x.playerName?`<br><small>${escapeHTML(x.playerName)}</small>`:''}</td><td>${x.points}</td><td>—</td><td>${x.cumulative}</td><td>${x.runAvg.toFixed(3)}</td></tr>`).join('')||'<tr><td colspan="5">尚未記錄</td></tr>';
+ tbody.innerHTML=rows.slice().reverse().map(x=>`<tr><td>${x.inn}${x.playerName?`<br><small>${escapeHTML(x.playerName)}</small>`:''}</td><td>${x.points}</td><td>${duration(x.inningTimeSeconds??x.shotTimeSeconds)}</td><td>${x.cumulative}</td><td>${x.runAvg.toFixed(3)}</td></tr>`).join('')||'<tr><td colspan="5">尚未記錄</td></tr>';
 
- chips.innerHTML=quickScores.slice(-12).reverse().map(x=>`<div class="score-chip"><small>${x.playerName?escapeHTML(x.playerName):'#'+x.inn}</small><strong>${x.points}</strong><small>Run</small></div>`).join('');
+ chips.innerHTML=quickScores.slice(-12).reverse().map(x=>`<div class="score-chip"><small>${x.playerName?escapeHTML(x.playerName):'#'+x.inn}</small><strong>${x.points}</strong><small>${duration(x.inningTimeSeconds??x.shotTimeSeconds)}</small></div>`).join('');
 
  if(activityType.value==='多人追分'){
    playerSummaryBody.innerHTML=participants.map((p,index)=>{
