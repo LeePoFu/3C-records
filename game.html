@@ -381,7 +381,7 @@ function prepareQuickMode(){
    ?'每位參與者下台後輸入整杆得分，系統會依照設定順序自動輪替。'
    :(duelMode?'每位球員下台後輸入整杆得分，系統會自動切換到另一位球員。':'一整杆結束、回到座位後，再一次輸入本杆總得分。');
  currentPlayerCard.classList.toggle('hidden',!(t==='多人追分'||duelMode));
- if(t==='多人追分'||duelMode)currentPlayerName.textContent=participants[activeParticipantIndex]?.name||'—';if(duelMode)quickCommitButton.textContent='換對手 →';else if(t==='多人追分')quickCommitButton.textContent='下一位 →';else quickCommitButton.textContent='完成本杆';
+ if(duelMode)quickCommitButton.textContent='換對手 →';else if(t==='多人追分')quickCommitButton.textContent='下一位 →';else quickCommitButton.textContent='完成本杆';
 }
 
 function captureQuickState(){
@@ -501,11 +501,33 @@ function undoQuick(){
  if(stats(quickScores).totalPoints<Number(targetScore.value)){
    reachedAt=0;quickReached.classList.add('hidden');
  }
- if(activityType.value==='多人追分'||duelMode)currentPlayerName.textContent=participants[activeParticipantIndex]?.name||'—';
+ if(activityType.value==='多人追分'||duelMode)
  updateQuickUndoButton();drawQuick();
  resetActionTimer('上一步');
 }
 
+
+
+function renderCurrentPlayerCard(){
+ const card=document.getElementById('currentPlayerCard');
+ const nameElement=document.getElementById('currentPlayerName');
+ const timerElement=document.getElementById('currentPlayerTimer');
+ if(!card||!nameElement)return;
+
+ const shouldShow=activityType.value==='多人追分'||duelMode;
+ card.classList.toggle('hidden',!shouldShow);
+
+ if(!shouldShow)return;
+
+ const current=participants[activeParticipantIndex];
+ nameElement.textContent=current?.name||'—';
+
+ if(timerElement){
+   timerElement.textContent=isPaused
+     ?'時間已暫停'
+     :'單次擊球時間 '+duration(currentActionSeconds());
+ }
+}
 
 function renderMultiplayerBoard(){
  const board=document.getElementById('multiplayerBoard');
@@ -542,8 +564,7 @@ function drawQuick(){
  quickShots.textContent=displayStats.totalShots;
  quickAvg.textContent=Number(displayStats.avg||0).toFixed(3);
  quickActionClock.textContent=duration(currentActionSeconds());
- const currentPlayerTimerEl=document.getElementById('currentPlayerTimer');
- if(currentPlayerTimerEl)currentPlayerTimerEl.textContent=(isPaused?'時間已暫停':'單次擊球時間 '+duration(currentActionSeconds()));
+ 
 
  const quickRunPointsEl=document.getElementById('quickRunPoints');
  if(quickRunPointsEl)quickRunPointsEl.textContent=quickRunPoints;
@@ -587,6 +608,8 @@ function drawQuick(){
  }
 
  updateQuickUndoButton();
+ renderMultiplayerBoard();
+ renderCurrentPlayerCard();
  renderMultiplayerBoard();
 }
 
