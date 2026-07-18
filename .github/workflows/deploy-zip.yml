@@ -1,1 +1,83 @@
+name: Deploy ZIP to GitHub Pages
 
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "site.zip"
+      - ".github/workflows/deploy-zip.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 讀取 Repository
+        uses: actions/checkout@v4
+
+      - name: 設定 GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: 解壓縮網站
+        shell: bash
+        run: |
+          set -e
+
+          if [ ! -f "site.zip" ]; then
+            echo "找不到 site.zip"
+            exit 1
+          fi
+
+          rm -rf _site temp_unzip
+          mkdir -p _site temp_unzip
+
+          unzip -q site.zip -d temp_unzip
+
+          find temp_unzip -name "__MACOSX" -type d -prune -exec rm -rf {} +
+          find temp_unzip -name ".DS_Store" -type f -delete
+
+          INDEX_FILE=$(find temp_unzip -type f -name "index.html" | head -n 1)
+
+          if [ -z "$INDEX_FILE" ]; then
+            echo "ZIP 內找不到 index.html"
+            exit 1
+          fi
+
+          SITE_ROOT=$(dirname "$INDEX_FILE")
+
+          echo "網站根目錄：$SITE_ROOT"
+
+          cp -R "$SITE_ROOT"/. _site/
+
+          if [ ! -f "_site/index.html" ]; then
+            echo "部署資料夾內沒有 index.html"
+            exit 1
+          fi
+
+          echo "準備部署的檔案："
+          find _site -maxdepth 3 -type f | sort
+
+      - name: 上傳 Pages 檔案
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "_site"
+
+      - name: 部署 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
