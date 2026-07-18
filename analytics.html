@@ -1,1 +1,20 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/style.css"><title>分析</title></head><body><header><div class="wrap"><h1>統計分析</h1></div></header><nav><div class="nav"><a href="index.html">首頁</a><a href="game.html">新局</a><a href="history.html">歷史</a><a class="active" href="analytics.html">分析</a><a href="settings.html">設定</a></div></nav><main><section class="card"><h2>目前版本已記錄</h2><div class="metrics"><div class="metric"><div class="ml">總局數</div><div class="mv" id="g">0</div></div><div class="metric"><div class="ml">達標局數</div><div class="mv" id="c">0</div></div><div class="metric"><div class="ml">平均時間</div><div class="mv" id="d">00:00</div></div><div class="metric"><div class="ml">最佳 AVG</div><div class="mv" id="a">0.000</div></div></div></section></main><script src="js/common.js"></script><script>const x=loadHistory(),t=x.filter(v=>v.durationSeconds!=null);g.textContent=x.length;c.textContent=x.filter(v=>v.targetCompleted).length;d.textContent=duration(t.length?t.reduce((s,v)=>s+v.durationSeconds,0)/t.length:0);a.textContent=x.length?Math.max(...x.map(v=>Number(v.avg||0))).toFixed(3):'0.000'</script></body></html>
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/style.css"><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><title>分析</title></head><body>
+<header><div class="wrap"><h1>出杆節奏分析</h1><div class="sub">依每次按下「記錄本杆」的時間間隔計算</div></div></header>
+<nav><div class="nav"><a href="index.html">首頁</a><a href="game.html">新局</a><a href="history.html">歷史</a><a class="active" href="analytics.html">分析</a><a href="settings.html">設定</a></div></nav>
+<main>
+<section class="card"><h2>出杆時間總覽</h2><div class="metrics">
+<div class="metric"><div class="ml">已記錄出杆</div><div class="mv" id="count">0</div></div>
+<div class="metric"><div class="ml">平均出杆</div><div class="mv" id="mean">—</div></div>
+<div class="metric"><div class="ml">中位數</div><div class="mv" id="med">—</div></div>
+<div class="metric"><div class="ml">最快／最慢</div><div class="mv small-mv" id="range">—</div></div>
+</div><p class="note">第一杆的時間從按下「開始本局」起算；之後每杆從上一杆完成記錄後開始計時。</p></section>
+<section class="card"><h2>最近 30 次出杆節奏</h2><div class="chart-box"><canvas id="rhythmChart"></canvas></div></section>
+<section class="card"><h2>得分與出杆時間</h2><div class="table"><table><thead><tr><th>局</th><th>杆次</th><th>得分</th><th>出杆時間</th></tr></thead><tbody id="detail"></tbody></table></div></section>
+</main><script src="js/common.js"></script><script>
+const games=loadHistory(),ts=shotTimingStats(games);
+count.textContent=ts.count;mean.textContent=ts.count?ts.avg.toFixed(1)+'秒':'—';med.textContent=ts.count?ts.median.toFixed(1)+'秒':'—';range.textContent=ts.count?`${ts.fastest.toFixed(0)}／${ts.slowest.toFixed(0)}秒`:'—';
+const all=[];games.forEach((g,gi)=>(g.scores||[]).forEach(s=>{if(Number.isFinite(Number(s.shotTimeSeconds)))all.push({game:gi+1,inn:s.inn,points:s.points,time:Number(s.shotTimeSeconds)})}));
+const last=all.slice(-30);
+new Chart(rhythmChart,{type:'line',data:{labels:last.map(x=>`#${x.inn}`),datasets:[{label:'出杆時間（秒）',data:last.map(x=>x.time),tension:.2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}});
+detail.innerHTML=last.length?last.slice().reverse().map(x=>`<tr><td>${x.game}</td><td>${x.inn}</td><td>${x.points}</td><td>${x.time} 秒</td></tr>`).join(''):'<tr><td colspan="4">新版開始後才會累積出杆時間資料</td></tr>';
+</script></body></html>
