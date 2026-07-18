@@ -1,61 +1,146 @@
 <!doctype html><html lang="zh-Hant"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<link rel="stylesheet" href="css/style.css"><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<title>訓練分析｜3CTS</title></head><body>
-<header><div class="wrap"><h1>訓練與連續得分分析</h1><div class="sub">Run 分布、穩定性與出杆節奏</div></div></header>
-<nav><div class="nav"><a href="index.html">首頁</a><a href="game.html">新局</a><a href="history.html">歷史</a><a class="active" href="analytics.html">分析</a><a href="settings.html">設定</a></div></nav>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Rhythm Analytics｜3CTS</title>
+</head><body>
+<header><div class="wrap"><h1>Rhythm Analytics</h1><div class="sub">所有活動模式的單次擊球時間與連續得分分析</div></div></header>
+<nav><div class="nav">
+<a href="index.html">首頁</a><a href="game.html">新局</a><a href="history.html">歷史</a><a class="active" href="analytics.html">分析</a><a href="settings.html">設定</a>
+</div></nav>
 <main>
-<section class="card"><h2>連續得分能力</h2>
-<div class="metrics">
-<div class="metric"><div class="ml">平均每杆得分</div><div class="mv" id="runAvg">0.000</div></div>
-<div class="metric"><div class="ml">得分杆平均分</div><div class="mv" id="positiveAvg">0.000</div></div>
-<div class="metric"><div class="ml">0 分率</div><div class="mv" id="zeroRate">0.0%</div></div>
-<div class="metric"><div class="ml">3+ 杆比例</div><div class="mv" id="threeRate">0.0%</div></div>
-</div>
-<p class="note">「得分杆平均分」只計算得分大於 0 的杆次，可反映一旦開啟得分後，平均能延續多少分。</p>
+
+<section class="card">
+  <h2>單次擊球節奏</h2>
+  <div class="metrics">
+    <div class="metric"><div class="ml">已記錄擊球</div><div class="mv" id="rhythmCount">0</div></div>
+    <div class="metric"><div class="ml">平均時間</div><div class="mv" id="rhythmMean">—</div></div>
+    <div class="metric"><div class="ml">中位數</div><div class="mv" id="rhythmMedian">—</div></div>
+    <div class="metric"><div class="ml">最快／最慢</div><div class="mv small-mv" id="rhythmRange">—</div></div>
+  </div>
+  <p class="note">此區使用所有模式的「單次擊球時間」。每次按下 +1、−1、快捷分數、下一杆、換對手、下一位或上一步後，計時會重新開始。</p>
+</section>
+
+<section class="card">
+  <h2>節奏穩定性</h2>
+  <div class="metrics">
+    <div class="metric"><div class="ml">標準差</div><div class="mv" id="rhythmSD">—</div></div>
+    <div class="metric"><div class="ml">中間50%區間</div><div class="mv small-mv" id="rhythmIQR">—</div></div>
+    <div class="metric"><div class="ml">變異係數</div><div class="mv" id="rhythmCV">—</div></div>
+    <div class="metric"><div class="ml">節奏穩定指數</div><div class="mv" id="rhythmConsistency">—</div></div>
+  </div>
+  <p class="note">節奏穩定指數介於 0 至 1，越高代表單次擊球時間越一致；仍應搭配 AVG、0 分率與 Run 分布一起判讀。</p>
+</section>
+
+<section class="card">
+  <h2>得分與結束回合的時間</h2>
+  <div class="metrics">
+    <div class="metric"><div class="ml">得分操作平均</div><div class="mv" id="scoringTime">—</div></div>
+    <div class="metric"><div class="ml">得分操作次數</div><div class="mv" id="scoringCount">0</div></div>
+    <div class="metric"><div class="ml">回合結束平均</div><div class="mv" id="endingTime">—</div></div>
+    <div class="metric"><div class="ml">回合結束次數</div><div class="mv" id="endingCount">0</div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>最近 50 次單次擊球時間</h2>
+  <div class="chart-box"><canvas id="rhythmTrendChart"></canvas></div>
+</section>
+
+<section class="card">
+  <h2>各活動模式平均時間</h2>
+  <div class="chart-box"><canvas id="activityRhythmChart"></canvas></div>
+  <div class="table" style="margin-top:14px">
+    <table>
+      <thead><tr><th>活動類型</th><th>紀錄數</th><th>平均</th><th>中位數</th><th>穩定指數</th></tr></thead>
+      <tbody id="activityRhythmTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <h2>連續得分能力</h2>
+  <div class="metrics">
+    <div class="metric"><div class="ml">平均每杆得分</div><div class="mv" id="runAvg">0.000</div></div>
+    <div class="metric"><div class="ml">得分杆平均分</div><div class="mv" id="positiveAvg">0.000</div></div>
+    <div class="metric"><div class="ml">0 分率</div><div class="mv" id="zeroRate">0.0%</div></div>
+    <div class="metric"><div class="ml">3+ 杆比例</div><div class="mv" id="threeRate">0.0%</div></div>
+  </div>
 </section>
 
 <section class="card"><h2>Run 分布</h2><div class="chart-box"><canvas id="runChart"></canvas></div></section>
 
-<section class="card"><h2>穩定性指標</h2>
-<div class="metrics">
-<div class="metric"><div class="ml">2+ 杆比例</div><div class="mv" id="twoRate">0.0%</div></div>
-<div class="metric"><div class="ml">4+ 杆比例</div><div class="mv" id="fourRate">0.0%</div></div>
-<div class="metric"><div class="ml">High Run</div><div class="mv" id="highRun">0</div></div>
-<div class="metric"><div class="ml">穩定性指數</div><div class="mv" id="consistency">0.000</div></div>
-</div>
-<p class="note">穩定性指數介於 0 至 1，越高代表每杆得分波動越小。建議與平均每杆得分、0 分率一起解讀，不能單獨判斷實力。</p>
+<section class="card">
+  <h2>對戰分析</h2>
+  <div class="metrics">
+    <div class="metric"><div class="ml">對戰局數</div><div class="mv" id="duelGames">0</div></div>
+    <div class="metric"><div class="ml">勝率</div><div class="mv" id="winRate">0.0%</div></div>
+    <div class="metric"><div class="ml">勝／敗／和</div><div class="mv small-mv" id="record">0／0／0</div></div>
+    <div class="metric"><div class="ml">平均分差</div><div class="mv" id="margin">0.0</div></div>
+  </div>
 </section>
 
-<section class="card"><h2>逐局平均每杆得分</h2><div class="chart-box"><canvas id="gameRunChart"></canvas></div></section>
-
-<section class="card"><h2>對戰分析</h2>
-<div class="metrics">
-<div class="metric"><div class="ml">對戰局數</div><div class="mv" id="duelGames">0</div></div>
-<div class="metric"><div class="ml">勝率</div><div class="mv" id="winRate">0.0%</div></div>
-<div class="metric"><div class="ml">勝／敗／和</div><div class="mv small-mv" id="record">0／0／0</div></div>
-<div class="metric"><div class="ml">平均分差</div><div class="mv" id="margin">0.0</div></div>
-</div></section>
-<section class="card"><h2>出杆節奏（僅逐次紀錄模式）</h2>
-<div class="metrics">
-<div class="metric"><div class="ml">已記錄出杆</div><div class="mv" id="timedCount">0</div></div>
-<div class="metric"><div class="ml">平均出杆</div><div class="mv" id="timedMean">—</div></div>
-<div class="metric"><div class="ml">中位數</div><div class="mv" id="timedMedian">—</div></div>
-<div class="metric"><div class="ml">最快／最慢</div><div class="mv small-mv" id="timedRange">—</div></div>
-</div>
-</section>
 </main>
-<script src="js/common.js"></script><script>
+<script src="js/common.js"></script>
+<script>
 const games=loadHistory();
+const rhythm=rhythmAnalysis(games);
+const byActivity=rhythmByActivity(games);
+
+rhythmCount.textContent=rhythm.count;
+rhythmMean.textContent=rhythm.count?rhythm.avg.toFixed(1)+'秒':'—';
+rhythmMedian.textContent=rhythm.count?rhythm.median.toFixed(1)+'秒':'—';
+rhythmRange.textContent=rhythm.count?`${rhythm.fastest.toFixed(0)}／${rhythm.slowest.toFixed(0)}秒`:'—';
+rhythmSD.textContent=rhythm.count?rhythm.standardDeviation.toFixed(1)+'秒':'—';
+rhythmIQR.textContent=rhythm.count?`${rhythm.p25.toFixed(0)}–${rhythm.p75.toFixed(0)}秒`:'—';
+rhythmCV.textContent=rhythm.count?(rhythm.coefficientOfVariation*100).toFixed(1)+'%':'—';
+rhythmConsistency.textContent=rhythm.count?rhythm.rhythmConsistency.toFixed(3):'—';
+scoringTime.textContent=rhythm.scoringCount?rhythm.scoringAvg.toFixed(1)+'秒':'—';
+scoringCount.textContent=rhythm.scoringCount;
+endingTime.textContent=rhythm.turnEndingCount?rhythm.turnEndingAvg.toFixed(1)+'秒':'—';
+endingCount.textContent=rhythm.turnEndingCount;
+
+const recentEvents=rhythm.events.slice(-50);
+new Chart(rhythmTrendChart,{
+  type:'line',
+  data:{
+    labels:recentEvents.map((event,index)=>String(rhythm.events.length-recentEvents.length+index+1)),
+    datasets:[{label:'單次擊球時間（秒）',data:recentEvents.map(event=>event.intervalSeconds),tension:.22}]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    scales:{y:{beginAtZero:true}},
+    plugins:{tooltip:{callbacks:{afterLabel(ctx){
+      const event=recentEvents[ctx.dataIndex];
+      return `${event.activityType}｜${event.actionType||''}｜${event.playerName||''}`;
+    }}}}
+  }
+});
+
+new Chart(activityRhythmChart,{
+  type:'bar',
+  data:{
+    labels:byActivity.map(item=>item.activityType),
+    datasets:[{label:'平均秒數',data:byActivity.map(item=>Number(item.avg.toFixed(1)))}]
+  },
+  options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}
+});
+
+activityRhythmTable.innerHTML=byActivity.length?byActivity.map(item=>`
+<tr>
+<td>${escapeHTML(item.activityType)}</td>
+<td>${item.count}</td>
+<td>${item.avg.toFixed(1)} 秒</td>
+<td>${item.median.toFixed(1)} 秒</td>
+<td>${item.rhythmConsistency.toFixed(3)}</td>
+</tr>`).join(''):'<tr><td colspan="5">v4.1 之後的新紀錄才會包含單次擊球時間</td></tr>';
+
 const ra=runAnalysis(games);
 runAvg.textContent=ra.runAvg.toFixed(3);
 positiveAvg.textContent=ra.scoringRunAvg.toFixed(3);
 zeroRate.textContent=(ra.zeroRate*100).toFixed(1)+'%';
 threeRate.textContent=(ra.threePlusRate*100).toFixed(1)+'%';
-twoRate.textContent=(ra.twoPlusRate*100).toFixed(1)+'%';
-fourRate.textContent=(ra.fourPlusRate*100).toFixed(1)+'%';
-highRun.textContent=ra.highRun;
-consistency.textContent=ra.consistencyIndex.toFixed(3);
 
 new Chart(runChart,{
  type:'bar',
@@ -63,25 +148,13 @@ new Chart(runChart,{
  options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}
 });
 
-const gameRuns=games.map((g,i)=>({label:i+1,value:runAnalysis([g]).runAvg}));
-new Chart(gameRunChart,{
- type:'line',
- data:{labels:gameRuns.map(x=>x.label),datasets:[{label:'平均每杆得分',data:gameRuns.map(x=>x.value),tension:.25}]},
- options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}
-});
-
-const duel=games.filter(g=>g.duelResult);
-const wins=duel.filter(g=>g.duelResult.outcome==='勝').length;
-const losses=duel.filter(g=>g.duelResult.outcome==='敗').length;
-const draws=duel.filter(g=>g.duelResult.outcome==='和').length;
+const duel=games.filter(game=>game.duelResult);
+const wins=duel.filter(game=>game.duelResult.outcome==='勝').length;
+const losses=duel.filter(game=>game.duelResult.outcome==='敗').length;
+const draws=duel.filter(game=>game.duelResult.outcome==='和').length;
 duelGames.textContent=duel.length;
 winRate.textContent=(duel.length?wins/duel.length*100:0).toFixed(1)+'%';
 record.textContent=`${wins}／${losses}／${draws}`;
-margin.textContent=(duel.length?duel.reduce((s,g)=>s+(g.duelResult.selfScore-g.duelResult.opponentScore),0)/duel.length:0).toFixed(1);
-
-const ts=shotTimingStats(games);
-timedCount.textContent=ts.count;
-timedMean.textContent=ts.count?ts.avg.toFixed(1)+'秒':'—';
-timedMedian.textContent=ts.count?ts.median.toFixed(1)+'秒':'—';
-timedRange.textContent=ts.count?`${ts.fastest.toFixed(0)}／${ts.slowest.toFixed(0)}秒`:'—';
-</script></body></html>
+margin.textContent=(duel.length?duel.reduce((sum,game)=>sum+(game.duelResult.selfScore-game.duelResult.opponentScore),0)/duel.length:0).toFixed(1);
+</script>
+</body></html>

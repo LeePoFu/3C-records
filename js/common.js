@@ -54,3 +54,78 @@ function runAnalysis(games){
 function gameInputMode(activityType){
   return activityType==="獨自練球" ? "live" : "run-total";
 }
+
+function actionTimingEventsFromGames(games){
+  return (games||[]).flatMap((game,gameIndex)=>
+    (game.actionTimingEvents||[]).map(event=>({
+      ...event,
+      gameIndex:gameIndex+1,
+      gameId:game.id||null,
+      gameDate:game.date||"",
+      activityType:game.activityType||"",
+      inputMode:game.inputMode||"",
+      intervalSeconds:Number(event.intervalSeconds)
+    }))
+  ).filter(event=>Number.isFinite(event.intervalSeconds)&&event.intervalSeconds>=0);
+}
+
+function standardDeviation(values){
+  if(!values.length)return 0;
+  const mean=values.reduce((a,b)=>a+b,0)/values.length;
+  return Math.sqrt(values.reduce((sum,value)=>sum+Math.pow(value-mean,2),0)/values.length);
+}
+
+function percentile(values,p){
+  if(!values.length)return 0;
+  const sorted=[...values].sort((a,b)=>a-b);
+  const index=(sorted.length-1)*p;
+  const lower=Math.floor(index),upper=Math.ceil(index);
+  if(lower===upper)return sorted[lower];
+  return sorted[lower]+(sorted[upper]-sorted[lower])*(index-lower);
+}
+
+function isScoringAction(event){
+  const type=String(event.actionType||"");
+  return type.includes("得分+1")||type.includes("快速加分")||type==="快捷分數";
+}
+
+function isTurnEndingAction(event){
+  const type=String(event.actionType||"");
+  return type==="完成本杆"||type==="換對手"||type==="下一位";
+}
+
+function rhythmAnalysis(games){
+  const events=actionTimingEventsFromGames(games);
+  const times=events.map(event=>event.intervalSeconds);
+  const scoringEvents=events.filter(isScoringAction);
+  const turnEndingEvents=events.filter(isTurnEndingAction);
+  const scoringTimes=scoringEvents.map(event=>event.intervalSeconds);
+  const endingTimes=turnEndingEvents.map(event=>event.intervalSeconds);
+  const avg=times.length?times.reduce((a,b)=>a+b,0)/times.length:0;
+  const sd=standardDeviation(times);
+  return{
+    events,
+    count:times.length,
+    avg,
+    median:percentile(times,.5),
+    p25:percentile(times,.25),
+    p75:percentile(times,.75),
+    fastest:times.length?Math.min(...times):0,
+    slowest:times.length?Math.max(...times):0,
+    standardDeviation:sd,
+    coefficientOfVariation:avg?sd/avg:0,
+    rhythmConsistency:avg?1/(1+sd/avg):0,
+    scoringCount:scoringTimes.length,
+    scoringAvg:scoringTimes.length?scoringTimes.reduce((a,b)=>a+b,0)/scoringTimes.length:0,
+    turnEndingCount:endingTimes.length,
+    turnEndingAvg:endingTimes.length?endingTimes.reduce((a,b)=>a+b,0)/endingTimes.length:0
+  };
+}
+
+function rhythmByActivity(games){
+  const types=[...new Set((games||[]).map(game=>game.activityType).filter(Boolean))];
+  return types.map(activityType=>{
+    const analysis=rhythmAnalysis((games||[]).filter(game=>game.activityType===activityType));
+    return{activityType,...analysis};
+  }).filter(item=>item.count>0);
+}

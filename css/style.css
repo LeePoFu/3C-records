@@ -446,3 +446,17 @@ header{background:linear-gradient(135deg,var(--pro-primary),var(--pro-primary-da
   background:var(--pro-primary-soft,#e8f7f4);
   border:1px solid #99f6e4;
 }
+
+
+/* v4.2 Rhythm Analytics */
+.rhythm-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px 10px;
+  border-radius:999px;
+  background:var(--pro-primary-soft,#e8f7f4);
+  color:var(--pro-primary,#0f766e);
+  font-size:.78rem;
+  font-weight:900;
+}
