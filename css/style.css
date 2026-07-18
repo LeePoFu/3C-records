@@ -460,3 +460,87 @@ header{background:linear-gradient(135deg,var(--pro-primary),var(--pro-primary-da
   font-size:.78rem;
   font-weight:900;
 }
+
+
+/* ===== v4.3 Match Control ===== */
+.duel-starting-score-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-top:12px;
+}
+.match-scoring-block{
+  margin-top:14px;
+  padding:16px;
+  border-radius:20px;
+  background:#f8fafc;
+  border:1px solid var(--pro-line,#d8e1eb);
+}
+.match-secondary-actions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-top:12px;
+}
+.pause-full{
+  background:#334155;
+  color:#fff;
+}
+.game-paused .current-player-card{
+  background:#fff7ed;
+  border-color:#fdba74;
+}
+.game-paused .match-scoring-block .scoring-action:not(.pause-full),
+.game-paused #live .scoring-action:not(.pause-full){
+  opacity:.42;
+}
+.duel-inline-board{
+  margin-top:18px;
+  padding-top:4px;
+}
+.duel-inline-board h3{
+  margin:0 0 10px;
+}
+.duel-side-label{
+  display:inline-flex;
+  align-self:center;
+  padding:4px 9px;
+  border-radius:999px;
+  background:#e2e8f0;
+  color:#475569;
+  font-size:.75rem;
+  font-weight:900;
+}
+.duel-player-card.active .duel-side-label{
+  background:#0f766e;
+  color:#fff;
+}
+.duel-score-breakdown{
+  color:#475569;
+  font-size:.82rem;
+  margin-bottom:6px;
+}
+#quickMetrics{
+  margin-top:18px;
+}
+@media(max-width:540px){
+  #runTotalPanel{
+    padding:14px;
+  }
+  .current-player-card{
+    margin-bottom:0;
+    border-bottom-left-radius:10px;
+    border-bottom-right-radius:10px;
+  }
+  .match-scoring-block{
+    margin-top:0;
+    border-top-left-radius:10px;
+    border-top-right-radius:10px;
+  }
+  .match-secondary-actions{
+    grid-template-columns:1fr 1fr;
+  }
+  .duel-starting-score-grid{
+    grid-template-columns:1fr 1fr;
+  }
+}
