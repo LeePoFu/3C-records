@@ -169,6 +169,15 @@ function resetActionTimer(actionType, details={}){
  actionTimerAt=now;
 }
 
+
+function updateActiveClock(){
+  if(inputMode==="live"){
+    draw();
+  }else{
+    drawQuick();
+  }
+}
+
 function currentActionSeconds(){
  return actionTimerAt?Math.max(0,Math.floor((Date.now()-actionTimerAt)/1000)):0;
 }
@@ -238,7 +247,7 @@ function startGame(){
  }
 
  started=Date.now();lastShotAt=started;actionTimerAt=started;
- clearInterval(timer);timer=setInterval(draw,500);
+ clearInterval(timer);timer=setInterval(updateActiveClock,500);
  setup.classList.add('hidden');document.body.classList.toggle('pro-mode',professionalMode.checked);
 
  if(inputMode==='live'){
@@ -255,7 +264,7 @@ function startGame(){
    duelSummaryCard.classList.toggle('hidden',!duelMode);
    prepareQuickMode();
  }
- updateUndoButton();updateQuickUndoButton();draw();drawQuick();
+ updateUndoButton();updateQuickUndoButton();updateActiveClock();
 }
 function adjust(d){
  const next=Math.max(0,cp+d);
@@ -521,7 +530,7 @@ function finishQuick(){
   :(duelMode
     ?`完成本局？\n${r.duelResult.selfName} ${r.duelResult.selfScore}－${r.duelResult.opponentScore} ${r.duelResult.opponentName}\n結果：${r.duelResult.outcome}`
     :`完成本局？\n得分 ${r.totalPoints}/${r.targetScore}\n杆數 ${r.totalShots}\nAVG ${r.avg.toFixed(3)}`);
- if(!confirm(msg)){timer=setInterval(draw,500);return}
+ if(!confirm(msg)){timer=setInterval(updateActiveClock,500);return}
  const h=loadHistory();h.push(r);saveHistory(h);location.href='history.html';
 }
 
@@ -538,7 +547,7 @@ function draw(){
  chips.innerHTML=scores.slice(-12).reverse().map(x=>`<div class="score-chip"><small>#${x.inn}</small><strong>${x.points}</strong><small>${duration(x.shotTimeSeconds)}</small></div>`).join('');
 }
 function record(){const s=stats(scores),ts=shotTimingStats([{scores}]);return{id:Date.now(),inputMode:'live',date:gameDate.value,time:gameTime.value,venue:venue.value,activityType:activityType.value,activityMeta:meta(),targetScore:Number(targetScore.value),scores:[...scores],totalPoints:s.totalPoints,totalShots:s.totalShots,avg:s.avg,highRun:s.highRun,zeroShots:s.zeroShots,zeroRate:s.zeroRate,durationSeconds:seconds(),averageShotTimeSeconds:ts.avg,targetCompleted:s.totalPoints>=Number(targetScore.value),targetReachedSeconds:reachedAt?Math.floor((reachedAt-started)/1000):null,totalGameSeconds:seconds(),actionTimingEvents:actionTimingEvents.map(x=>({...x})),runMetrics:runAnalysis([{scores}])}}
-function finish(){if(!scores.length)return alert('請至少記錄一杆');clearInterval(timer);const r=record();if(!confirm(`完成本局？\n得分 ${r.totalPoints}/${r.targetScore}\n杆數 ${r.totalShots}\nAVG ${r.avg.toFixed(3)}\n平均出杆 ${r.averageShotTimeSeconds.toFixed(1)} 秒`)){timer=setInterval(draw,500);return}const h=loadHistory();h.push(r);saveHistory(h);location.href='history.html'}
+function finish(){if(!scores.length)return alert('請至少記錄一杆');clearInterval(timer);const r=record();if(!confirm(`完成本局？\n得分 ${r.totalPoints}/${r.targetScore}\n杆數 ${r.totalShots}\nAVG ${r.avg.toFixed(3)}\n平均出杆 ${r.averageShotTimeSeconds.toFixed(1)} 秒`)){timer=setInterval(updateActiveClock,500);return}const h=loadHistory();h.push(r);saveHistory(h);location.href='history.html'}
 function cancelGame(){if(confirm('確定取消本局？'))location.reload()}
 function preventScoringZoom(){
  document.querySelectorAll('.scoring-action').forEach(button=>{
