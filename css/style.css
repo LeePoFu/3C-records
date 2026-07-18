@@ -18,3 +18,90 @@
 .table{overflow-x:auto;-webkit-overflow-scrolling:touch}.participants{display:grid;gap:8px;margin-top:8px}.participant{display:grid;grid-template-columns:52px 1fr;gap:8px;align-items:center}
 .small-mv{font-size:1rem}
 @media(min-width:720px){.grid{grid-template-columns:repeat(3,1fr)}.metrics{grid-template-columns:repeat(4,1fr)}}
+
+
+/* v2.4 scoring button layout */
+.score-adjust-buttons {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.score-adjust-buttons button {
+  width: 100%;
+  min-width: 0;
+  min-height: 96px;
+  margin: 0;
+  padding: 12px 8px;
+  border-radius: 18px;
+  font-size: 2.25rem;
+  font-weight: 900;
+}
+
+.score-plus {
+  background: var(--primary);
+}
+
+.score-minus {
+  background: var(--danger);
+}
+
+.primary-controls,
+.finish-controls {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.primary-controls button,
+.finish-controls button {
+  width: 100%;
+  margin: 0;
+  border-radius: 16px;
+}
+
+.commit-full {
+  min-height: 76px;
+  background: var(--warning);
+  color: #111827;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.undo-full {
+  min-height: 58px;
+  background: var(--gray);
+  font-size: 1.05rem;
+}
+
+.finish-full {
+  min-height: 62px;
+  background: var(--primary);
+  font-size: 1.12rem;
+}
+
+.cancel-full {
+  min-height: 62px;
+  background: var(--danger);
+  font-size: 1.12rem;
+}
+
+@media (max-width: 420px) {
+  .score-adjust-buttons {
+    gap: 10px;
+  }
+
+  .score-adjust-buttons button {
+    min-height: 88px;
+    font-size: 2rem;
+  }
+
+  .commit-full {
+    min-height: 72px;
+    font-size: 1.15rem;
+  }
+}

@@ -18,11 +18,22 @@
 </div>
 <div class="progress"><div class="bar" id="bar"></div></div><div class="caption" id="progressText">0 / 30</div>
 <div class="caption" style="margin-top:18px">第 <span id="inn">1</span> 杆目前得分</div><div class="score" id="current">0</div>
-<div class="big"><button onclick="adjust(1)">+1</button><button class="danger" onclick="adjust(-1)">−1</button></div>
-<button class="commit" onclick="commitInn()">記錄本杆，進入下一杆</button>
-<button class="gray" style="margin-top:10px" onclick="undo()">撤回上一杆</button>
+<div class="score-adjust-buttons">
+  <button class="score-plus" onclick="adjust(1)">+1</button>
+  <button class="score-minus" onclick="adjust(-1)">−1</button>
+</div>
+
+<div class="primary-controls">
+  <button class="commit-full" onclick="commitInn()">記錄本杆，進入下一杆</button>
+  <button class="undo-full" onclick="undo()">撤回上一杆</button>
+</div>
+
 <div id="reached" class="banner hidden">已達成目標得分！</div>
-<div class="actions"><button onclick="finish()">完成並儲存本局</button><button class="danger" onclick="cancelGame()">取消本局</button></div></section>
+
+<div class="finish-controls">
+  <button class="finish-full" onclick="finish()">完成並儲存本局</button>
+  <button class="cancel-full" onclick="cancelGame()">取消本局</button>
+</div></section>
 
 <section class="card hidden" id="list"><h2>已記錄出杆</h2>
 <div class="score-history" id="chips"></div>
