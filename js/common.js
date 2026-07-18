@@ -16,7 +16,9 @@ function buildHistoryWorkbookData(h){
  h.forEach((g,i)=>{const ts=shotTimingStats([g]);overview.push([i+1,g.date||"",g.time||"",g.venue||"",g.activityType||"",getActivitySummary(g),g.targetScore||"",g.totalPoints||0,g.totalShots||0,Number(g.avg||0).toFixed(3),g.highRun||0,duration(g.durationSeconds||0),ts.count?ts.avg.toFixed(1):"",g.targetCompleted?"是":"否"])});
  const details=[["局數","輪次","得分","本次出杆時間（秒）","累積時間（秒）"]];
  h.forEach((g,i)=>(g.scores||[]).forEach(s=>details.push([i+1,s.inn,s.points,s.shotTimeSeconds??"",s.elapsedSeconds??""])));
- return[{name:"歷史總覽",data:overview},{name:"逐杆明細",data:details}]
+ const actions=[["局數","序號","操作","球員","間隔秒數","全局累積秒數","本杆分數","操作後分數"]];
+ h.forEach((g,i)=>(g.actionTimingEvents||[]).forEach(a=>actions.push([i+1,a.sequence,a.actionType||"",a.playerName||a.completedPlayerName||"",a.intervalSeconds??"",a.elapsedSeconds??"",a.runPoints??"",a.pointsAfter??a.runPointsAfter??""])));
+ return[{name:"歷史總覽",data:overview},{name:"逐杆明細",data:details},{name:"擊球時間紀錄",data:actions}]
 }
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
 function runAnalysis(games){

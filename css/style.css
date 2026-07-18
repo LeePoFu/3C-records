@@ -439,3 +439,10 @@ header{background:linear-gradient(135deg,var(--pro-primary),var(--pro-primary-da
   .dashboard-hero{grid-template-columns:1fr}
   .card{padding:16px}
 }
+
+#starterFields{
+  padding:14px;
+  border-radius:16px;
+  background:var(--pro-primary-soft,#e8f7f4);
+  border:1px solid #99f6e4;
+}

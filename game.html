@@ -5,8 +5,12 @@
 <section class="card" id="setup"><h2>本局設定</h2><div class="professional-toggle"><div><strong>職業模式</strong><div class="note">開始後隱藏次要資訊，只保留主要計分操作。</div></div><input type="checkbox" id="professionalMode" style="width:auto;min-height:auto;transform:scale(1.3)"></div><div class="grid"><div><label>日期</label><input type="date" id="gameDate"></div><div><label>時間</label><input type="time" id="gameTime"></div><div><label>地點</label><input id="venue"></div></div>
 <div class="grid" style="margin-top:10px"><div><label>目標得分</label><input type="number" id="targetScore" min="1" value="30"></div><div><label>活動類型</label><select id="activityType" onchange="activityUI()"><option>獨自練球</option><option>單打無賭注</option><option>單打有賭注</option><option>多人追分</option><option>正式比賽</option></select></div></div>
 <div id="modeDescription" class="mode-description"></div>
+<div id="starterFields" class="hidden" style="margin-top:10px">
+  <label for="starterSelect">先開始的球員</label>
+  <select id="starterSelect"></select>
+</div>
 <div id="practice" style="margin-top:10px"><label>練球模式</label><select id="practiceMode"><option>單一母球</option><option>白黃交錯</option><option>任意母球</option></select></div>
-<div id="duelNames" class="hidden" style="margin-top:10px"><label>對手姓名</label><input id="opponentName" placeholder="請輸入對手姓名"></div><div id="stake" class="hidden" style="margin-top:10px"><label>賭注金額</label><input type="number" id="stakeAmount" min="0"></div><div id="competition" class="hidden" style="margin-top:10px"><label>比賽名稱</label><input id="competitionName"></div>
+<div id="duelNames" class="hidden" style="margin-top:10px"><label>對手姓名</label><input id="opponentName" placeholder="請輸入對手姓名" oninput="updateStarterOptions()"></div><div id="stake" class="hidden" style="margin-top:10px"><label>賭注金額</label><input type="number" id="stakeAmount" min="0"></div><div id="competition" class="hidden" style="margin-top:10px"><label>比賽名稱</label><input id="competitionName"></div>
 <div id="multi" class="hidden" style="margin-top:10px"><label>參與者姓名</label><input id="multiNames" placeholder="以逗號分隔" oninput="participantUI()"><div id="orders" class="participants"></div></div>
 <button style="margin-top:14px" onclick="startGame()">開始本局並計時</button></section>
 
@@ -24,7 +28,7 @@
     <div class="metric"><div class="ml">目前總分</div><div class="mv" id="quickTotal">0</div></div>
     <div class="metric"><div class="ml">已完成杆數</div><div class="mv" id="quickShots">0</div></div>
     <div class="metric"><div class="ml">目前 AVG</div><div class="mv" id="quickAvg">0.000</div></div>
-    <div class="metric"><div class="ml">High Run</div><div class="mv" id="quickHighRun">0</div></div>
+    <div class="metric"><div class="ml">單次擊球時間</div><div class="mv" id="quickActionClock">00:00</div></div>
   </div>
 
   <div class="progress"><div class="bar" id="quickBar"></div></div>
@@ -63,7 +67,7 @@
 <div class="metric"><div class="ml">目前得分</div><div class="mv" id="total">0</div></div>
 <div class="metric"><div class="ml">杆數</div><div class="mv" id="shots">0</div></div>
 <div class="metric"><div class="ml">得分率</div><div class="mv" id="avg">0.000</div></div>
-<div class="metric"><div class="ml">目前出杆計時</div><div class="mv" id="shotClock">00:00</div></div>
+<div class="metric"><div class="ml">單次擊球時間</div><div class="mv" id="shotClock">00:00</div></div>
 </div>
 <div class="progress"><div class="bar" id="bar"></div></div><div class="caption" id="progressText">0 / 30</div>
 <div class="caption" style="margin-top:18px">第 <span id="inn">1</span> 杆目前得分</div><div class="score" id="current">0</div>
@@ -86,7 +90,7 @@
 
 <section class="card hidden secondary-info" id="list"><h2>已記錄出杆</h2>
 <div class="score-history" id="chips"></div>
-<div class="table"><table><thead><tr><th>杆次</th><th>得分</th><th>出杆時間</th><th>累積分</th><th>AVG</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
+<div class="table"><table><thead><tr><th>杆次</th><th>得分</th><th>單次時間</th><th>累積分</th><th>AVG</th></tr></thead><tbody id="tbody"></tbody></table></div></section>
 
 <section class="card hidden secondary-info" id="duelSummaryCard">
   <h2>雙方即時比分</h2>
@@ -112,6 +116,8 @@ let participants=[];
 let duelMode=false;
 let activeParticipantIndex=0;
 let participantStats={};
+let actionTimerAt=0;
+let actionTimingEvents=[];
 const MAX_UNDO_STATES=100;
 
 function cloneScores(value){
@@ -147,6 +153,40 @@ function updateUndoButton(){
  const button=document.getElementById('undoButton');
  if(button)button.disabled=undoStack.length===0;
 }
+
+function resetActionTimer(actionType, details={}){
+ const now=Date.now();
+ if(actionTimerAt){
+   actionTimingEvents.push({
+     sequence:actionTimingEvents.length+1,
+     actionType,
+     intervalSeconds:Math.max(0,Math.round((now-actionTimerAt)/1000)),
+     elapsedSeconds:started?Math.max(0,Math.round((now-started)/1000)):0,
+     playerName:(participants[activeParticipantIndex]?.name)||'我',
+     ...details
+   });
+ }
+ actionTimerAt=now;
+}
+
+function currentActionSeconds(){
+ return actionTimerAt?Math.max(0,Math.floor((Date.now()-actionTimerAt)/1000)):0;
+}
+
+function updateStarterOptions(){
+ const type=activityType.value;
+ const current=starterSelect.value;
+ let names=[];
+ if(['單打無賭注','單打有賭注','正式比賽'].includes(type)){
+   names=['我',opponentName.value.trim()||'對手'];
+ }else if(type==='多人追分'){
+   names=[...orders.querySelectorAll('input')].map(x=>x.dataset.name).filter(Boolean);
+ }
+ starterSelect.innerHTML=names.map(name=>`<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`).join('');
+ if(names.includes(current))starterSelect.value=current;
+ starterFields.classList.toggle('hidden',names.length===0);
+}
+
 function activityUI(){
  const t=activityType.value;
  practice.classList.toggle('hidden',t!=='獨自練球');
@@ -163,15 +203,16 @@ function activityUI(){
   '正式比賽':'採整杆快速紀錄，適合比賽或裁判式記錄。'
  };
  modeDescription.textContent=descriptions[t]||'';
+ updateStarterOptions();
 }
-function participantUI(){const ns=multiNames.value.split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean);orders.innerHTML=ns.map((n,i)=>`<div class="participant"><input type="number" min="1" value="${i+1}" data-name="${escapeHTML(n)}"><div>${escapeHTML(n)}</div></div>`).join('')}
-function meta(){const t=activityType.value;if(t==='獨自練球')return{practiceMode:practiceMode.value};if(t==='單打無賭注')return{selfName:'我',opponentName:opponentName.value.trim()||'對手'};if(t==='單打有賭注')return{selfName:'我',opponentName:opponentName.value.trim()||'對手',stakeAmount:stakeAmount.value};if(t==='正式比賽')return{competitionName:competitionName.value,selfName:'我',opponentName:opponentName.value.trim()||'對手'};return{stakeAmount:stakeAmount.value,participants:[...orders.querySelectorAll('input')].map(x=>({name:x.dataset.name,order:Number(x.value)})).sort((a,b)=>a.order-b.order)}}
+function participantUI(){const ns=multiNames.value.split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean);orders.innerHTML=ns.map((n,i)=>`<div class="participant"><input type="number" min="1" value="${i+1}" data-name="${escapeHTML(n)}"><div>${escapeHTML(n)}</div></div>`).join('');updateStarterOptions()}
+function meta(){const t=activityType.value;if(t==='獨自練球')return{practiceMode:practiceMode.value};if(t==='單打無賭注')return{selfName:'我',opponentName:opponentName.value.trim()||'對手',starterName:starterSelect.value};if(t==='單打有賭注')return{selfName:'我',opponentName:opponentName.value.trim()||'對手',stakeAmount:stakeAmount.value,starterName:starterSelect.value};if(t==='正式比賽')return{competitionName:competitionName.value,selfName:'我',opponentName:opponentName.value.trim()||'對手',starterName:starterSelect.value};return{stakeAmount:stakeAmount.value,starterName:starterSelect.value,participants:[...orders.querySelectorAll('input')].map(x=>({name:x.dataset.name,order:Number(x.value)})).sort((a,b)=>a.order-b.order)}}
 function startGame(){
  if(Number(targetScore.value)<1)return alert('請輸入目標得分');
  inputMode=gameInputMode(activityType.value);
  scores=[];cp=0;reachedAt=0;undoStack=[];
  quickRunPoints=0;quickScores=[];quickUndoStack=[];
- participants=[];activeParticipantIndex=0;participantStats={};
+ participants=[];activeParticipantIndex=0;participantStats={};actionTimingEvents=[];actionTimerAt=0;
  duelMode=['單打無賭注','單打有賭注','正式比賽'].includes(activityType.value);
 
  if(activityType.value==='多人追分'){
@@ -191,9 +232,12 @@ function startGame(){
 
  if(activityType.value==='多人追分'||duelMode){
    participants.forEach(p=>participantStats[p.name]={scores:[],totalPoints:0,totalShots:0,highRun:0});
+   const selectedStarter=starterSelect.value;
+   const selectedIndex=participants.findIndex(p=>p.name===selectedStarter);
+   activeParticipantIndex=selectedIndex>=0?selectedIndex:0;
  }
 
- started=Date.now();lastShotAt=started;
+ started=Date.now();lastShotAt=started;actionTimerAt=started;
  clearInterval(timer);timer=setInterval(draw,500);
  setup.classList.add('hidden');document.body.classList.toggle('pro-mode',professionalMode.checked);
 
@@ -218,6 +262,7 @@ function adjust(d){
  if(next===cp)return;
  pushUndoState();
  cp=next;
+ resetActionTimer(d>0?'得分+1':'得分-1',{pointsAfter:cp,inn:scores.length+1});
  draw()
 }
 function commitInn(){
@@ -226,6 +271,7 @@ function commitInn(){
  const shotTime=Math.max(0,Math.round((now-lastShotAt)/1000));
  const elapsed=Math.max(0,Math.round((now-started)/1000));
  scores.push({inn:scores.length+1,points:cp,shotTimeSeconds:shotTime,elapsedSeconds:elapsed});
+ resetActionTimer('完成本杆',{runPoints:cp,inn:scores.length});
  cp=0;lastShotAt=now;
  const s=stats(scores);
  if(!reachedAt&&s.totalPoints>=Number(targetScore.value)){
@@ -238,7 +284,8 @@ function commitInn(){
 function undo(){
  if(!undoStack.length)return;
  const previous=undoStack.pop();
- restoreState(previous)
+ restoreState(previous);
+ resetActionTimer('上一步');
 }
 
 function prepareQuickMode(){
@@ -282,6 +329,7 @@ function adjustQuickRun(delta){
  if(next===quickRunPoints)return;
  pushQuickUndo();
  quickRunPoints=next;
+ resetActionTimer(delta>0?'快速加分+1':'快速減分-1',{runPointsAfter:quickRunPoints});
  drawQuick();
 }
 
@@ -289,6 +337,7 @@ function setQuickRun(value){
  if(quickRunPoints===value)return;
  pushQuickUndo();
  quickRunPoints=value;
+ resetActionTimer('快捷分數',{selectedPoints:value});
  drawQuick();
 }
 
@@ -297,6 +346,8 @@ function commitQuickRun(){
  const now=Date.now();
  const elapsed=Math.max(0,Math.round((now-started)/1000));
  const common={inn:quickScores.length+1,points:quickRunPoints,elapsedSeconds:elapsed,shotTimeSeconds:null};
+ const completedPlayerName=(participants[activeParticipantIndex]?.name)||'我';
+ resetActionTimer(duelMode?'換對手':(activityType.value==='多人追分'?'下一位':'完成本杆'),{runPoints:quickRunPoints,completedPlayerName});
 
  if(activityType.value==='多人追分'||duelMode){
    const player=participants[activeParticipantIndex];
@@ -341,6 +392,7 @@ function undoQuick(){
  }
  if(activityType.value==='多人追分'||duelMode)currentPlayerName.textContent=participants[activeParticipantIndex]?.name||'—';
  updateQuickUndoButton();drawQuick();
+ resetActionTimer('上一步');
 }
 
 function drawQuick(){
@@ -363,7 +415,7 @@ function drawQuick(){
  quickTotal.textContent=displayStats.totalPoints;
  quickShots.textContent=displayStats.totalShots;
  quickAvg.textContent=Number(displayStats.avg||0).toFixed(3);
- quickHighRun.textContent=displayStats.highRun;
+ quickActionClock.textContent=duration(currentActionSeconds());
 
  const quickRunPointsEl=document.getElementById('quickRunPoints');
  if(quickRunPointsEl)quickRunPointsEl.textContent=quickRunPoints;
@@ -452,6 +504,8 @@ function quickRecord(){
     ?participantRecords.some(p=>p.totalPoints>=Number(targetScore.value))
     :s.totalPoints>=Number(targetScore.value),
   targetReachedSeconds:reachedAt?Math.floor((reachedAt-started)/1000):null,
+  totalGameSeconds:seconds(),
+  actionTimingEvents:actionTimingEvents.map(x=>({...x})),
   runMetrics,
   participants:participantRecords,
   duelResult:result
@@ -476,14 +530,14 @@ function currentShotSeconds(){return Math.max(0,Math.floor((Date.now()-lastShotA
 function draw(){
  const s=stats(scores),t=Number(targetScore.value)||0;
  total.textContent=s.totalPoints;shots.textContent=s.totalShots;avg.textContent=s.avg.toFixed(3);
- shotClock.textContent=duration(currentShotSeconds());inn.textContent=scores.length+1;current.textContent=cp;
+ shotClock.textContent=duration(currentActionSeconds());inn.textContent=scores.length+1;current.textContent=cp;
  progressText.textContent=`${s.totalPoints} / ${t}`;bar.style.width=`${t?Math.min(100,s.totalPoints/t*100):0}%`;
  let cumulative=0;
  const rows=scores.map(x=>{cumulative+=Number(x.points);return{...x,cumulative,runAvg:cumulative/x.inn}});
  tbody.innerHTML=rows.slice().reverse().map(x=>`<tr><td>${x.inn}</td><td>${x.points}</td><td>${duration(x.shotTimeSeconds)}</td><td>${x.cumulative}</td><td>${x.runAvg.toFixed(3)}</td></tr>`).join('')||'<tr><td colspan="5">尚未記錄</td></tr>';
  chips.innerHTML=scores.slice(-12).reverse().map(x=>`<div class="score-chip"><small>#${x.inn}</small><strong>${x.points}</strong><small>${duration(x.shotTimeSeconds)}</small></div>`).join('');
 }
-function record(){const s=stats(scores),ts=shotTimingStats([{scores}]);return{id:Date.now(),inputMode:'live',date:gameDate.value,time:gameTime.value,venue:venue.value,activityType:activityType.value,activityMeta:meta(),targetScore:Number(targetScore.value),scores:[...scores],totalPoints:s.totalPoints,totalShots:s.totalShots,avg:s.avg,highRun:s.highRun,zeroShots:s.zeroShots,zeroRate:s.zeroRate,durationSeconds:seconds(),averageShotTimeSeconds:ts.avg,targetCompleted:s.totalPoints>=Number(targetScore.value),targetReachedSeconds:reachedAt?Math.floor((reachedAt-started)/1000):null,runMetrics:runAnalysis([{scores}])}}
+function record(){const s=stats(scores),ts=shotTimingStats([{scores}]);return{id:Date.now(),inputMode:'live',date:gameDate.value,time:gameTime.value,venue:venue.value,activityType:activityType.value,activityMeta:meta(),targetScore:Number(targetScore.value),scores:[...scores],totalPoints:s.totalPoints,totalShots:s.totalShots,avg:s.avg,highRun:s.highRun,zeroShots:s.zeroShots,zeroRate:s.zeroRate,durationSeconds:seconds(),averageShotTimeSeconds:ts.avg,targetCompleted:s.totalPoints>=Number(targetScore.value),targetReachedSeconds:reachedAt?Math.floor((reachedAt-started)/1000):null,totalGameSeconds:seconds(),actionTimingEvents:actionTimingEvents.map(x=>({...x})),runMetrics:runAnalysis([{scores}])}}
 function finish(){if(!scores.length)return alert('請至少記錄一杆');clearInterval(timer);const r=record();if(!confirm(`完成本局？\n得分 ${r.totalPoints}/${r.targetScore}\n杆數 ${r.totalShots}\nAVG ${r.avg.toFixed(3)}\n平均出杆 ${r.averageShotTimeSeconds.toFixed(1)} 秒`)){timer=setInterval(draw,500);return}const h=loadHistory();h.push(r);saveHistory(h);location.href='history.html'}
 function cancelGame(){if(confirm('確定取消本局？'))location.reload()}
 function preventScoringZoom(){
