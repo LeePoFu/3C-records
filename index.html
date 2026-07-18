@@ -1,18 +1,21 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/style.css"><link rel="manifest" href="manifest.json"><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><title>3CTS</title></head><body>
-<header><div class="wrap"><h1>3-Cushion Training System</h1><div class="sub">Dashboard</div></div></header>
+<!doctype html><html lang="zh-Hant"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><title>3-Cushion Professional</title></head><body>
+<header><div class="wrap"><h1>3-Cushion Professional</h1><div class="sub">你的三顆星訓練與對戰中心</div></div></header>
 <nav><div class="nav"><a class="active" href="index.html">首頁</a><a href="game.html">新局</a><a href="history.html">歷史</a><a href="analytics.html">分析</a><a href="settings.html">設定</a></div></nav>
-<main><section class="card"><a class="btn" href="game.html">開始新局</a></section>
-<section class="card"><h2>總覽</h2><div class="metrics">
-<div class="metric"><div class="ml">總局數</div><div class="mv" id="g">0</div></div>
-<div class="metric"><div class="ml">總 AVG</div><div class="mv" id="a">0.000</div></div>
-<div class="metric"><div class="ml">最近 10 局 AVG</div><div class="mv" id="r">0.000</div></div>
-<div class="metric"><div class="ml">得分杆平均分</div><div class="mv" id="st">0.000</div></div>
+<main>
+<section class="card"><div class="dashboard-hero">
+<div class="hero-main"><div>累積局數</div><div class="hero-value" id="totalGames">0</div><a class="button-link light" style="margin-top:16px" href="game.html">開始新局</a></div>
+<div class="hero-side"><div class="metric"><div class="ml">總 AVG</div><div class="mv" id="overallAvg">0.000</div></div><div class="metric"><div class="ml">High Run</div><div class="mv" id="highRun">0</div></div></div>
 </div></section>
-<section class="card"><h2>近 20 局 AVG 趨勢</h2><div class="chart-box"><canvas id="avgChart"></canvas></div></section>
-<section class="card"><h2>最近 5 局</h2><div class="table"><table><thead><tr><th>日期</th><th>活動</th><th>得分</th><th>杆數</th><th>AVG</th><th>平均出杆</th></tr></thead><tbody id="recent"></tbody></table></div></section>
+<section class="card"><div class="section-title-row"><h2>近期狀態</h2><a class="mini-link" href="analytics.html">查看分析</a></div>
+<div class="metrics"><div class="metric"><div class="ml">最近10局 AVG</div><div class="mv" id="recentAvg">0.000</div></div><div class="metric"><div class="ml">得分杆平均分</div><div class="mv" id="scoringRunAvg">0.000</div></div><div class="metric"><div class="ml">0分率</div><div class="mv" id="zeroRate">0.0%</div></div><div class="metric"><div class="ml">對戰勝率</div><div class="mv" id="winRate">0.0%</div></div></div></section>
+<section class="card"><h2>近20局 AVG 趨勢</h2><div class="chart-box"><canvas id="avgChart"></canvas></div></section>
+<section class="card"><div class="section-title-row"><h2>最近5局</h2><a class="mini-link" href="history.html">全部歷史</a></div><div class="table"><table><thead><tr><th>日期</th><th>類型</th><th>比分/得分</th><th>AVG/結果</th></tr></thead><tbody id="recentTable"></tbody></table></div></section>
 </main><script src="js/common.js"></script><script>
-const x=loadHistory(),hs=historyStats(x),ts=shotTimingStats(x),ra=runAnalysis(x);
-g.textContent=hs.totalGames;a.textContent=hs.avg.toFixed(3);r.textContent=hs.recent10Avg.toFixed(3);st.textContent=ra.scoringRunAvg.toFixed(3);
-const last=x.slice(-20);new Chart(avgChart,{type:'line',data:{labels:last.map((_,i)=>x.length-last.length+i+1),datasets:[{label:'AVG',data:last.map(v=>Number(v.avg||0)),tension:.25}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}});
-recent.innerHTML=x.length?x.slice(-5).reverse().map(v=>{const t=shotTimingStats([v]);return`<tr><td>${escapeHTML(v.date||'')}</td><td>${escapeHTML(v.activityType||'')}</td><td>${v.duelResult?`${v.duelResult.selfScore}－${v.duelResult.opponentScore}`:(v.activityType==='多人追分'?'—':(v.totalPoints??0))}</td><td>${(v.activityType==='多人追分'||v.duelResult)?(v.scores||[]).length:(v.totalShots||0)}</td><td>${v.duelResult?v.duelResult.outcome:(v.activityType==='多人追分'?'—':Number(v.avg||0).toFixed(3))}</td><td>${t.count?t.avg.toFixed(1)+'秒':'—'}</td></tr>`}).join(''):'<tr><td colspan="6">尚無紀錄</td></tr>';
+const games=loadHistory(),hs=historyStats(games),ra=runAnalysis(games),duel=games.filter(g=>g.duelResult),wins=duel.filter(g=>g.duelResult.outcome==='勝').length;
+totalGames.textContent=hs.totalGames;overallAvg.textContent=Number(hs.avg||0).toFixed(3);recentAvg.textContent=Number(hs.recent10Avg||0).toFixed(3);highRun.textContent=hs.highRun;scoringRunAvg.textContent=ra.scoringRunAvg.toFixed(3);zeroRate.textContent=(ra.zeroRate*100).toFixed(1)+'%';winRate.textContent=(duel.length?wins/duel.length*100:0).toFixed(1)+'%';
+const last=games.slice(-20);new Chart(avgChart,{type:'line',data:{labels:last.map((_,i)=>games.length-last.length+i+1),datasets:[{data:last.map(g=>Number(g.avg||0)),tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+recentTable.innerHTML=games.length?games.slice(-5).reverse().map(g=>{const score=g.duelResult?`${g.duelResult.selfScore}－${g.duelResult.opponentScore}`:(g.activityType==='多人追分'?'個別統計':`${g.totalPoints??0}/${g.targetScore||'-'}`);const result=g.duelResult?g.duelResult.outcome:(g.activityType==='多人追分'?'—':Number(g.avg||0).toFixed(3));return `<tr><td>${escapeHTML(g.date||'')}</td><td>${escapeHTML(g.activityType||'')}</td><td>${score}</td><td>${result}</td></tr>`}).join(''):'<tr><td colspan="4">尚無紀錄</td></tr>';
 </script></body></html>
