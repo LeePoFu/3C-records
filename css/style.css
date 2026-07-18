@@ -105,3 +105,62 @@
     font-size: 1.15rem;
   }
 }
+
+
+/* v3.0 interaction model */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overscroll-behavior-y: contain;
+}
+
+button,
+.button-link,
+.scoring-action {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.scoring-action {
+  cursor: pointer;
+}
+
+.scoring-action:active {
+  transform: scale(0.985);
+  filter: brightness(0.96);
+}
+
+.flow-hint {
+  margin: -2px 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  color: var(--gray);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.commit-full {
+  line-height: 1.3;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.undo-full:disabled {
+  background: #94a3b8;
+  color: #e2e8f0;
+  opacity: 0.6;
+}
+
+@media (max-width: 420px) {
+  .commit-full {
+    font-size: 1.05rem;
+  }
+}
