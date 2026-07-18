@@ -6,7 +6,7 @@
 <div class="grid" style="margin-top:10px"><div><label>目標得分</label><input type="number" id="targetScore" min="1" value="30"></div><div><label>活動類型</label><select id="activityType" onchange="activityUI()"><option>獨自練球</option><option>單打無賭注</option><option>單打有賭注</option><option>多人追分</option><option>正式比賽</option></select></div></div>
 <div id="modeDescription" class="mode-description"></div>
 <div id="practice" style="margin-top:10px"><label>練球模式</label><select id="practiceMode"><option>單一母球</option><option>白黃交錯</option><option>任意母球</option></select></div>
-<div id="duelNames" class="hidden" style="margin-top:10px"><div class="grid"><div><label>我的姓名</label><input id="selfName" value="我"></div><div><label>對手姓名</label><input id="opponentName"></div></div></div><div id="stake" class="hidden" style="margin-top:10px"><label>賭注金額</label><input type="number" id="stakeAmount" min="0"></div><div id="competition" class="hidden" style="margin-top:10px"><label>比賽名稱</label><input id="competitionName"></div>
+<div id="duelNames" class="hidden" style="margin-top:10px"><label>對手姓名</label><input id="opponentName" placeholder="請輸入對手姓名"></div><div id="stake" class="hidden" style="margin-top:10px"><label>賭注金額</label><input type="number" id="stakeAmount" min="0"></div><div id="competition" class="hidden" style="margin-top:10px"><label>比賽名稱</label><input id="competitionName"></div>
 <div id="multi" class="hidden" style="margin-top:10px"><label>參與者姓名</label><input id="multiNames" placeholder="以逗號分隔" oninput="participantUI()"><div id="orders" class="participants"></div></div>
 <button style="margin-top:14px" onclick="startGame()">開始本局並計時</button></section>
 
@@ -165,7 +165,7 @@ function activityUI(){
  modeDescription.textContent=descriptions[t]||'';
 }
 function participantUI(){const ns=multiNames.value.split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean);orders.innerHTML=ns.map((n,i)=>`<div class="participant"><input type="number" min="1" value="${i+1}" data-name="${escapeHTML(n)}"><div>${escapeHTML(n)}</div></div>`).join('')}
-function meta(){const t=activityType.value;if(t==='獨自練球')return{practiceMode:practiceMode.value};if(t==='單打無賭注')return{selfName:selfName.value.trim()||'我',opponentName:opponentName.value.trim()||'對手'};if(t==='單打有賭注')return{selfName:selfName.value.trim()||'我',opponentName:opponentName.value.trim()||'對手',stakeAmount:stakeAmount.value};if(t==='正式比賽')return{competitionName:competitionName.value,selfName:selfName.value.trim()||'我',opponentName:opponentName.value.trim()||'對手'};return{stakeAmount:stakeAmount.value,participants:[...orders.querySelectorAll('input')].map(x=>({name:x.dataset.name,order:Number(x.value)})).sort((a,b)=>a.order-b.order)}}
+function meta(){const t=activityType.value;if(t==='獨自練球')return{practiceMode:practiceMode.value};if(t==='單打無賭注')return{selfName:'我',opponentName:opponentName.value.trim()||'對手'};if(t==='單打有賭注')return{selfName:'我',opponentName:opponentName.value.trim()||'對手',stakeAmount:stakeAmount.value};if(t==='正式比賽')return{competitionName:competitionName.value,selfName:'我',opponentName:opponentName.value.trim()||'對手'};return{stakeAmount:stakeAmount.value,participants:[...orders.querySelectorAll('input')].map(x=>({name:x.dataset.name,order:Number(x.value)})).sort((a,b)=>a.order-b.order)}}
 function startGame(){
  if(Number(targetScore.value)<1)return alert('請輸入目標得分');
  inputMode=gameInputMode(activityType.value);
@@ -174,16 +174,18 @@ function startGame(){
  participants=[];activeParticipantIndex=0;participantStats={};
  duelMode=['單打無賭注','單打有賭注','正式比賽'].includes(activityType.value);
 
- if(activityType.value==='多人追分'||duelMode){
+ if(activityType.value==='多人追分'){
    participants=[...orders.querySelectorAll('input')]
      .map(x=>({name:x.dataset.name,order:Number(x.value)||0}))
      .filter(x=>x.name)
      .sort((a,b)=>a.order-b.order);
    if(!participants.length)return alert('請至少輸入一位參與者姓名');
  }else if(duelMode){
+   const opponent=opponentName.value.trim();
+   if(!opponent)return alert('請輸入對手姓名');
    participants=[
-     {name:selfName.value.trim()||'我',order:1,role:'self'},
-     {name:opponentName.value.trim()||'對手',order:2,role:'opponent'}
+     {name:'我',order:1,role:'self'},
+     {name:opponent,order:2,role:'opponent'}
    ];
  }
 
@@ -290,11 +292,11 @@ function commitQuickRun(){
  const elapsed=Math.max(0,Math.round((now-started)/1000));
  const common={inn:quickScores.length+1,points:quickRunPoints,elapsedSeconds:elapsed,shotTimeSeconds:null};
 
- if(activityType.value==='多人追分'){
+ if(activityType.value==='多人追分'||duelMode){
    const player=participants[activeParticipantIndex];
    const ps=participantStats[player.name];
    const playerInn=ps.scores.length+1;
-   const entry={...common,playerName:player.name,playerOrder:player.order,playerInn};
+   const entry={...common,playerName:player.name,playerOrder:player.order,playerInn,playerRole:player.role||null};
    quickScores.push(entry);
    ps.scores.push({...entry});
    ps.totalPoints+=quickRunPoints;
