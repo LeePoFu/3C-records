@@ -29,6 +29,13 @@
 
 <section class="card"><h2>逐局平均每杆得分</h2><div class="chart-box"><canvas id="gameRunChart"></canvas></div></section>
 
+<section class="card"><h2>對戰分析</h2>
+<div class="metrics">
+<div class="metric"><div class="ml">對戰局數</div><div class="mv" id="duelGames">0</div></div>
+<div class="metric"><div class="ml">勝率</div><div class="mv" id="winRate">0.0%</div></div>
+<div class="metric"><div class="ml">勝／敗／和</div><div class="mv small-mv" id="record">0／0／0</div></div>
+<div class="metric"><div class="ml">平均分差</div><div class="mv" id="margin">0.0</div></div>
+</div></section>
 <section class="card"><h2>出杆節奏（僅逐次紀錄模式）</h2>
 <div class="metrics">
 <div class="metric"><div class="ml">已記錄出杆</div><div class="mv" id="timedCount">0</div></div>
@@ -62,6 +69,15 @@ new Chart(gameRunChart,{
  data:{labels:gameRuns.map(x=>x.label),datasets:[{label:'平均每杆得分',data:gameRuns.map(x=>x.value),tension:.25}]},
  options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}
 });
+
+const duel=games.filter(g=>g.duelResult);
+const wins=duel.filter(g=>g.duelResult.outcome==='勝').length;
+const losses=duel.filter(g=>g.duelResult.outcome==='敗').length;
+const draws=duel.filter(g=>g.duelResult.outcome==='和').length;
+duelGames.textContent=duel.length;
+winRate.textContent=(duel.length?wins/duel.length*100:0).toFixed(1)+'%';
+record.textContent=`${wins}／${losses}／${draws}`;
+margin.textContent=(duel.length?duel.reduce((s,g)=>s+(g.duelResult.selfScore-g.duelResult.opponentScore),0)/duel.length:0).toFixed(1);
 
 const ts=shotTimingStats(games);
 timedCount.textContent=ts.count;

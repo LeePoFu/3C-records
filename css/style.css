@@ -232,3 +232,160 @@ button,
 @media(max-width:420px){
   .quick-score-presets { grid-template-columns: repeat(3,1fr); }
 }
+
+
+/* v3.2 consistent component sizing */
+:root{
+  --control-radius: 16px;
+  --control-height: 60px;
+  --large-control-height: 88px;
+  --card-gap: 12px;
+}
+
+.metrics {
+  align-items: stretch;
+}
+
+.metric {
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: var(--control-radius);
+}
+
+.score-adjust-buttons,
+.quick-run-buttons {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--card-gap);
+}
+
+.score-adjust-buttons button,
+.quick-run-buttons button {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--large-control-height);
+  height: var(--large-control-height);
+  border-radius: var(--control-radius);
+  padding: 10px;
+  margin: 0;
+}
+
+.quick-score-presets {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0,1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.quick-score-presets button {
+  width: 100%;
+  min-width: 0;
+  height: 54px;
+  min-height: 54px;
+  padding: 0;
+  border-radius: 14px;
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.commit-full,
+.undo-full,
+.finish-full,
+.cancel-full {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  border-radius: var(--control-radius);
+}
+
+.commit-full {
+  min-height: 76px;
+  height: auto;
+  padding: 14px 12px;
+}
+
+.undo-full,
+.finish-full,
+.cancel-full {
+  min-height: var(--control-height);
+}
+
+.primary-controls,
+.finish-controls {
+  gap: var(--card-gap);
+}
+
+.current-player-card {
+  min-height: 138px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: var(--control-radius);
+}
+
+.current-player-summary-note {
+  margin-top: 6px;
+  color: var(--gray);
+  font-size: .78rem;
+}
+
+.active-player-row td {
+  background: #ecfdf5;
+  font-weight: 800;
+}
+
+@media(max-width:420px){
+  .quick-score-presets {
+    grid-template-columns: repeat(3, minmax(0,1fr));
+  }
+
+  .metric {
+    min-height: 110px;
+  }
+}
+
+
+/* v3.3 duel scoring */
+.duel-scoreboard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 12px;
+}
+
+.duel-player-card {
+  min-height: 150px;
+  padding: 16px 10px;
+  border-radius: 16px;
+  border: 2px solid var(--border);
+  background: #f8fafc;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.duel-player-card.active {
+  border-color: var(--primary);
+  background: #ecfdf5;
+}
+
+.duel-player-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.duel-player-score {
+  margin: 8px 0;
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.duel-player-stats {
+  color: var(--gray);
+  font-size: .85rem;
+}
+
+@media(max-width:420px){
+  .duel-player-score { font-size: 1.65rem; }
+}
