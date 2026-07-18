@@ -164,3 +164,71 @@ button,
     font-size: 1.05rem;
   }
 }
+
+
+/* v3.1 mode-driven UI */
+.mode-description {
+  margin-top: 10px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: #ecfeff;
+  border: 1px solid #a5f3fc;
+  color: #155e75;
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+.current-player-card {
+  padding: 14px;
+  margin: 12px 0;
+  border-radius: 16px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  text-align: center;
+}
+
+.current-player-label {
+  color: var(--gray);
+  font-size: .82rem;
+}
+
+.current-player-name {
+  margin-top: 5px;
+  font-size: 1.65rem;
+  font-weight: 900;
+}
+
+.quick-run-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 14px 0 12px;
+}
+
+.quick-run-buttons button {
+  min-height: 82px;
+  font-size: 2rem;
+  border-radius: 18px;
+}
+
+.quick-minus { background: var(--danger); }
+.quick-plus { background: var(--primary); }
+
+.quick-score-presets {
+  display: grid;
+  grid-template-columns: repeat(6,1fr);
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.quick-score-presets button {
+  min-height: 48px;
+  padding: 8px 3px;
+  background: var(--light);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+@media(max-width:420px){
+  .quick-score-presets { grid-template-columns: repeat(3,1fr); }
+}

@@ -1,20 +1,71 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/style.css"><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><title>分析</title></head><body>
-<header><div class="wrap"><h1>出杆節奏分析</h1><div class="sub">依每次按下「記錄本杆」的時間間隔計算</div></div></header>
+<!doctype html><html lang="zh-Hant"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="stylesheet" href="css/style.css"><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>訓練分析｜3CTS</title></head><body>
+<header><div class="wrap"><h1>訓練與連續得分分析</h1><div class="sub">Run 分布、穩定性與出杆節奏</div></div></header>
 <nav><div class="nav"><a href="index.html">首頁</a><a href="game.html">新局</a><a href="history.html">歷史</a><a class="active" href="analytics.html">分析</a><a href="settings.html">設定</a></div></nav>
 <main>
-<section class="card"><h2>出杆時間總覽</h2><div class="metrics">
-<div class="metric"><div class="ml">已記錄出杆</div><div class="mv" id="count">0</div></div>
-<div class="metric"><div class="ml">平均出杆</div><div class="mv" id="mean">—</div></div>
-<div class="metric"><div class="ml">中位數</div><div class="mv" id="med">—</div></div>
-<div class="metric"><div class="ml">最快／最慢</div><div class="mv small-mv" id="range">—</div></div>
-</div><p class="note">第一杆的時間從按下「開始本局」起算；之後每杆從上一杆完成記錄後開始計時。</p></section>
-<section class="card"><h2>最近 30 次出杆節奏</h2><div class="chart-box"><canvas id="rhythmChart"></canvas></div></section>
-<section class="card"><h2>得分與出杆時間</h2><div class="table"><table><thead><tr><th>局</th><th>杆次</th><th>得分</th><th>出杆時間</th></tr></thead><tbody id="detail"></tbody></table></div></section>
-</main><script src="js/common.js"></script><script>
-const games=loadHistory(),ts=shotTimingStats(games);
-count.textContent=ts.count;mean.textContent=ts.count?ts.avg.toFixed(1)+'秒':'—';med.textContent=ts.count?ts.median.toFixed(1)+'秒':'—';range.textContent=ts.count?`${ts.fastest.toFixed(0)}／${ts.slowest.toFixed(0)}秒`:'—';
-const all=[];games.forEach((g,gi)=>(g.scores||[]).forEach(s=>{if(Number.isFinite(Number(s.shotTimeSeconds)))all.push({game:gi+1,inn:s.inn,points:s.points,time:Number(s.shotTimeSeconds)})}));
-const last=all.slice(-30);
-new Chart(rhythmChart,{type:'line',data:{labels:last.map(x=>`#${x.inn}`),datasets:[{label:'出杆時間（秒）',data:last.map(x=>x.time),tension:.2}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}});
-detail.innerHTML=last.length?last.slice().reverse().map(x=>`<tr><td>${x.game}</td><td>${x.inn}</td><td>${x.points}</td><td>${x.time} 秒</td></tr>`).join(''):'<tr><td colspan="4">新版開始後才會累積出杆時間資料</td></tr>';
+<section class="card"><h2>連續得分能力</h2>
+<div class="metrics">
+<div class="metric"><div class="ml">平均每杆得分</div><div class="mv" id="runAvg">0.000</div></div>
+<div class="metric"><div class="ml">得分杆平均分</div><div class="mv" id="positiveAvg">0.000</div></div>
+<div class="metric"><div class="ml">0 分率</div><div class="mv" id="zeroRate">0.0%</div></div>
+<div class="metric"><div class="ml">3+ 杆比例</div><div class="mv" id="threeRate">0.0%</div></div>
+</div>
+<p class="note">「得分杆平均分」只計算得分大於 0 的杆次，可反映一旦開啟得分後，平均能延續多少分。</p>
+</section>
+
+<section class="card"><h2>Run 分布</h2><div class="chart-box"><canvas id="runChart"></canvas></div></section>
+
+<section class="card"><h2>穩定性指標</h2>
+<div class="metrics">
+<div class="metric"><div class="ml">2+ 杆比例</div><div class="mv" id="twoRate">0.0%</div></div>
+<div class="metric"><div class="ml">4+ 杆比例</div><div class="mv" id="fourRate">0.0%</div></div>
+<div class="metric"><div class="ml">High Run</div><div class="mv" id="highRun">0</div></div>
+<div class="metric"><div class="ml">穩定性指數</div><div class="mv" id="consistency">0.000</div></div>
+</div>
+<p class="note">穩定性指數介於 0 至 1，越高代表每杆得分波動越小。建議與平均每杆得分、0 分率一起解讀，不能單獨判斷實力。</p>
+</section>
+
+<section class="card"><h2>逐局平均每杆得分</h2><div class="chart-box"><canvas id="gameRunChart"></canvas></div></section>
+
+<section class="card"><h2>出杆節奏（僅逐次紀錄模式）</h2>
+<div class="metrics">
+<div class="metric"><div class="ml">已記錄出杆</div><div class="mv" id="timedCount">0</div></div>
+<div class="metric"><div class="ml">平均出杆</div><div class="mv" id="timedMean">—</div></div>
+<div class="metric"><div class="ml">中位數</div><div class="mv" id="timedMedian">—</div></div>
+<div class="metric"><div class="ml">最快／最慢</div><div class="mv small-mv" id="timedRange">—</div></div>
+</div>
+</section>
+</main>
+<script src="js/common.js"></script><script>
+const games=loadHistory();
+const ra=runAnalysis(games);
+runAvg.textContent=ra.runAvg.toFixed(3);
+positiveAvg.textContent=ra.scoringRunAvg.toFixed(3);
+zeroRate.textContent=(ra.zeroRate*100).toFixed(1)+'%';
+threeRate.textContent=(ra.threePlusRate*100).toFixed(1)+'%';
+twoRate.textContent=(ra.twoPlusRate*100).toFixed(1)+'%';
+fourRate.textContent=(ra.fourPlusRate*100).toFixed(1)+'%';
+highRun.textContent=ra.highRun;
+consistency.textContent=ra.consistencyIndex.toFixed(3);
+
+new Chart(runChart,{
+ type:'bar',
+ data:{labels:['0分','1分','2分','3分','4分以上'],datasets:[{label:'杆次',data:[ra.distribution['0'],ra.distribution['1'],ra.distribution['2'],ra.distribution['3'],ra.distribution['4+']]}]},
+ options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}
+});
+
+const gameRuns=games.map((g,i)=>({label:i+1,value:runAnalysis([g]).runAvg}));
+new Chart(gameRunChart,{
+ type:'line',
+ data:{labels:gameRuns.map(x=>x.label),datasets:[{label:'平均每杆得分',data:gameRuns.map(x=>x.value),tension:.25}]},
+ options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}
+});
+
+const ts=shotTimingStats(games);
+timedCount.textContent=ts.count;
+timedMean.textContent=ts.count?ts.avg.toFixed(1)+'秒':'—';
+timedMedian.textContent=ts.count?ts.median.toFixed(1)+'秒':'—';
+timedRange.textContent=ts.count?`${ts.fastest.toFixed(0)}／${ts.slowest.toFixed(0)}秒`:'—';
 </script></body></html>

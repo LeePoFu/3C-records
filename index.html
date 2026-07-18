@@ -6,13 +6,13 @@
 <div class="metric"><div class="ml">總局數</div><div class="mv" id="g">0</div></div>
 <div class="metric"><div class="ml">總 AVG</div><div class="mv" id="a">0.000</div></div>
 <div class="metric"><div class="ml">最近 10 局 AVG</div><div class="mv" id="r">0.000</div></div>
-<div class="metric"><div class="ml">平均出杆時間</div><div class="mv" id="st">—</div></div>
+<div class="metric"><div class="ml">得分杆平均分</div><div class="mv" id="st">0.000</div></div>
 </div></section>
 <section class="card"><h2>近 20 局 AVG 趨勢</h2><div class="chart-box"><canvas id="avgChart"></canvas></div></section>
 <section class="card"><h2>最近 5 局</h2><div class="table"><table><thead><tr><th>日期</th><th>活動</th><th>得分</th><th>杆數</th><th>AVG</th><th>平均出杆</th></tr></thead><tbody id="recent"></tbody></table></div></section>
 </main><script src="js/common.js"></script><script>
-const x=loadHistory(),hs=historyStats(x),ts=shotTimingStats(x);
-g.textContent=hs.totalGames;a.textContent=hs.avg.toFixed(3);r.textContent=hs.recent10Avg.toFixed(3);st.textContent=ts.count?ts.avg.toFixed(1)+'秒':'—';
+const x=loadHistory(),hs=historyStats(x),ts=shotTimingStats(x),ra=runAnalysis(x);
+g.textContent=hs.totalGames;a.textContent=hs.avg.toFixed(3);r.textContent=hs.recent10Avg.toFixed(3);st.textContent=ra.scoringRunAvg.toFixed(3);
 const last=x.slice(-20);new Chart(avgChart,{type:'line',data:{labels:last.map((_,i)=>x.length-last.length+i+1),datasets:[{label:'AVG',data:last.map(v=>Number(v.avg||0)),tension:.25}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true}}}});
 recent.innerHTML=x.length?x.slice(-5).reverse().map(v=>{const t=shotTimingStats([v]);return`<tr><td>${escapeHTML(v.date||'')}</td><td>${escapeHTML(v.activityType||'')}</td><td>${v.totalPoints||0}</td><td>${v.totalShots||0}</td><td>${Number(v.avg||0).toFixed(3)}</td><td>${t.count?t.avg.toFixed(1)+'秒':'—'}</td></tr>`}).join(''):'<tr><td colspan="6">尚無紀錄</td></tr>';
 </script></body></html>

@@ -19,3 +19,36 @@ function buildHistoryWorkbookData(h){
  return[{name:"歷史總覽",data:overview},{name:"逐杆明細",data:details}]
 }
 if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
+function runAnalysis(games){
+  const runs=(games||[]).flatMap(g=>(g.scores||[]).map(s=>Number(s.points)).filter(Number.isFinite));
+  const total=runs.length;
+  const positive=runs.filter(v=>v>0);
+  const sum=runs.reduce((a,b)=>a+b,0);
+  const zeroCount=runs.filter(v=>v===0).length;
+  const twoPlus=runs.filter(v=>v>=2).length;
+  const threePlus=runs.filter(v=>v>=3).length;
+  const fourPlus=runs.filter(v=>v>=4).length;
+  const distribution={"0":0,"1":0,"2":0,"3":0,"4+":0};
+  runs.forEach(v=>{
+    if(v>=4)distribution["4+"]++;
+    else distribution[String(Math.max(0,v))]=(distribution[String(Math.max(0,v))]||0)+1;
+  });
+  const variance=total?runs.reduce((a,v)=>a+Math.pow(v-(sum/total),2),0)/total:0;
+  return{
+    totalRuns:total,
+    runAvg:total?sum/total:0,
+    scoringRunAvg:positive.length?positive.reduce((a,b)=>a+b,0)/positive.length:0,
+    zeroRate:total?zeroCount/total:0,
+    scoringRate:total?positive.length/total:0,
+    twoPlusRate:total?twoPlus/total:0,
+    threePlusRate:total?threePlus/total:0,
+    fourPlusRate:total?fourPlus/total:0,
+    consistencyIndex:total?1/(1+Math.sqrt(variance)):0,
+    distribution,
+    highRun:runs.length?Math.max(...runs):0
+  };
+}
+
+function gameInputMode(activityType){
+  return activityType==="獨自練球" ? "live" : "run-total";
+}
