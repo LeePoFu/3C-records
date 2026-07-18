@@ -394,12 +394,7 @@ function captureQuickState(){
 function pushQuickUndo(){
  quickUndoStack.push(captureQuickState());
  if(quickUndoStack.length>100)quickUndoStack.shift();
- if(activityType.value==='多人追分'&&typeof multiplayerBoard!=='undefined'){
-   multiplayerBoard.innerHTML=participants.map((p,index)=>{
-     const ps=participantStats[p.name]||{totalPoints:0};
-     return `<div class="scoreboard-row ${index===activeParticipantIndex?'active':''}"><div class="scoreboard-order">${p.order}</div><div class="scoreboard-name">${escapeHTML(p.name)}</div><div class="scoreboard-score">${ps.totalPoints}</div></div>`;
-   }).join('');
- }
+ renderMultiplayerBoard();
  updateQuickUndoButton();
 }
 
@@ -429,42 +424,58 @@ function setQuickRun(value){
 
 function commitQuickRun(){
  if(isPaused)return;
- pushQuickUndo();
+ const currentParticipant=participants[activeParticipantIndex];
+ if(!currentParticipant)return;
+
  const now=Date.now();
  const elapsed=seconds();
- const common={inn:quickScores.length+1,points:quickRunPoints,elapsedSeconds:elapsed,shotTimeSeconds:null};
- const completedPlayerName=(participants[activeParticipantIndex]?.name)||'我';
- resetActionTimer(duelMode?'換對手':(activityType.value==='多人追分'?'下一位':'完成本杆'),{runPoints:quickRunPoints,completedPlayerName});
+ const completedPlayerName=currentParticipant.name;
+ const completedPoints=quickRunPoints;
+
+ pushQuickUndoState();
+
+ const common={
+   inn:quickScores.length+1,
+   points:completedPoints,
+   elapsedSeconds:elapsed,
+   shotTimeSeconds:null,
+   playerName:completedPlayerName
+ };
+
+ quickScores.push(common);
 
  if(activityType.value==='多人追分'||duelMode){
-   const player=participants[activeParticipantIndex];
-   const ps=participantStats[player.name];
-   const playerInn=ps.scores.length+1;
-   const entry={...common,playerName:player.name,playerOrder:player.order,playerInn,playerRole:player.role||null};
-   quickScores.push(entry);
-   ps.scores.push({...entry});
-   ps.totalPoints+=quickRunPoints;
+   const ps=participantStats[completedPlayerName];
+   ps.scores.push({...common});
+   ps.totalPoints+=completedPoints;
    ps.totalShots+=1;
-   ps.highRun=Math.max(ps.highRun,quickRunPoints);
-   activeParticipantIndex=(activeParticipantIndex+1)%participants.length;
-   currentPlayerName.textContent=participants[activeParticipantIndex]?.name||'—';
- }else{
-   quickScores.push(common);
+   ps.highRun=Math.max(ps.highRun,completedPoints);
  }
 
+ resetActionTimer(
+   duelMode?'換對手':(activityType.value==='多人追分'?'下一位':'完成本杆'),
+   {runPoints:completedPoints,completedPlayerName}
+ );
+
+ // 先完成目前球員資料，再切換下一位，最後才重繪。
  quickRunPoints=0;
- let reachedTarget=false;
+
  if(activityType.value==='多人追分'||duelMode){
-   const completedIndex=(activeParticipantIndex-1+participants.length)%participants.length;
-   const completedPlayer=participants[completedIndex];
-   reachedTarget=Number(participantStats[completedPlayer.name]?.totalPoints||0)>=Number(targetScore.value);
- }else{
-   reachedTarget=stats(quickScores).totalPoints>=Number(targetScore.value);
+   activeParticipantIndex=(activeParticipantIndex+1)%participants.length;
  }
- if(!reachedAt&&reachedTarget){
-   reachedAt=now;quickReached.classList.remove('hidden');
+
+ if(!quickReachedAt){
+   const reached=duelMode
+     ? participants.some(p=>(participantStats[p.name]?.totalPoints||0)>=Number(targetScore.value||30))
+     : activityType.value==='多人追分'
+       ? participants.some(p=>(participantStats[p.name]?.totalPoints||0)>=Number(targetScore.value||30))
+       : quickScores.reduce((sum,row)=>sum+Number(row.points||0),0)>=Number(targetScore.value||30);
+   if(reached)quickReachedAt=Date.now();
  }
+
+ // 強制同一輪立即刷新目前球員、多人記分板、統計與紀錄。
  drawQuick();
+ updateQuickUndoButton();
 }
 
 function undoQuick(){
@@ -481,6 +492,21 @@ function undoQuick(){
  if(activityType.value==='多人追分'||duelMode)currentPlayerName.textContent=participants[activeParticipantIndex]?.name||'—';
  updateQuickUndoButton();drawQuick();
  resetActionTimer('上一步');
+}
+
+
+function renderMultiplayerBoard(){
+ const board=document.getElementById('multiplayerBoard');
+ if(!board||activityType.value!=='多人追分')return;
+ board.innerHTML=participants.map((p,index)=>{
+   const ps=participantStats[p.name]||{totalPoints:0,totalShots:0,highRun:0};
+   const active=index===activeParticipantIndex;
+   return `<div class="scoreboard-row ${active?'active':''}">
+     <div class="scoreboard-order">${p.order}</div>
+     <div class="scoreboard-name">${escapeHTML(p.name)}${active?' <span class="active-player-indicator">目前</span>':''}</div>
+     <div class="scoreboard-score">${ps.totalPoints}</div>
+   </div>`;
+ }).join('');
 }
 
 function drawQuick(){
@@ -549,6 +575,7 @@ function drawQuick(){
  }
 
  updateQuickUndoButton();
+ renderMultiplayerBoard();
 }
 
 function quickRecord(){

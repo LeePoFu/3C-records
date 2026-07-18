@@ -544,3 +544,55 @@ header{background:linear-gradient(135deg,var(--pro-primary),var(--pro-primary-da
     grid-template-columns:1fr 1fr;
   }
 }
+
+
+/* ===== v4.3.1 Multiplayer Sync & Control Balance ===== */
+.match-secondary-actions{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  gap:12px !important;
+  align-items:stretch;
+}
+.match-secondary-actions > button{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:64px !important;
+  height:64px !important;
+  margin:0 !important;
+  padding:12px 10px !important;
+  border-radius:18px !important;
+  font-size:1rem !important;
+  line-height:1.15 !important;
+}
+#quickPauseButton,
+#quickUndoButton{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.active-player-indicator{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin-left:7px;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#0f766e;
+  color:#fff;
+  font-size:.7rem;
+  font-weight:900;
+  vertical-align:middle;
+}
+.scoreboard-row.active{
+  box-shadow:0 0 0 2px rgba(15,118,110,.12);
+}
+@media(max-width:540px){
+  .match-secondary-actions{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) !important;
+  }
+  .match-secondary-actions > button{
+    min-height:62px !important;
+    height:62px !important;
+    font-size:.98rem !important;
+  }
+}
