@@ -207,3 +207,51 @@ function dedupeGameRecords(games){
     return true;
   });
 }
+
+
+function decodeScoreboardBridgePayload(payload){
+  const normalized=payload.replace(/-/g,'+').replace(/_/g,'/');
+  const padded=normalized+'='.repeat((4-normalized.length%4)%4);
+  const binary=atob(padded);
+  const bytes=Uint8Array.from(binary,char=>char.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function importScoreboardBridgeFromHash(){
+  const prefix='#scoreboardImport=';
+  if(!location.hash.startsWith(prefix))return false;
+
+  try{
+    const decoded=decodeScoreboardBridgePayload(location.hash.slice(prefix.length));
+    const incoming=normalizeGameRecord(decoded?.game);
+
+    if(!incoming||incoming.source!=='ipad-scoreboard'){
+      throw new Error('Invalid scoreboard record');
+    }
+
+    const current=loadHistory();
+    const key=incoming.externalMatchId||incoming.id;
+    const exists=current.some(item=>(item.externalMatchId||item.id)===key);
+
+    if(!exists){
+      saveHistory([...current,incoming]);
+    }
+
+    window.history.replaceState(null,'',location.pathname+location.search);
+    alert(exists?'這場比賽已存在於 Records，未重複匯入。':'已從 iPad Scoreboard 匯入對戰紀錄。');
+
+    if(!location.pathname.endsWith('/history.html')){
+      location.replace('history.html?scoreboardImported=1');
+    }else{
+      location.reload();
+    }
+    return true;
+  }catch(error){
+    console.error(error);
+    window.history.replaceState(null,'',location.pathname+location.search);
+    alert('無法匯入 Scoreboard 紀錄，請回 Scoreboard 再按一次「同步並開啟 Records」。');
+    return false;
+  }
+}
+
+window.addEventListener('DOMContentLoaded',importScoreboardBridgeFromHash);

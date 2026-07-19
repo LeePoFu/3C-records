@@ -8,7 +8,7 @@
 <section class="card"><h2>資料</h2><div class="actions"><button onclick="exportJSON()">匯出 JSON 備份</button><button class="light" onclick="importFile.click()">匯入 JSON 備份</button><button class="light" onclick="exportWorkbook('3C-training-history.xlsx',buildHistoryWorkbookData(loadHistory()))">匯出 Excel</button></div><input type="file" id="importFile" class="hidden" accept=".json" onchange="importJSON(event)"></section>
 <section class="card"><h2>資料狀態</h2><div class="metrics"><div class="metric"><div class="ml">目前局數</div><div class="mv" id="gameCount">0</div></div><div class="metric"><div class="ml">資料大小</div><div class="mv" id="dataSize">0 KB</div></div></div></section>
 <section class="card"><h2>系統</h2><p class="note">版本：v4.0 Professional<br>資料鍵：threeCushionTrainingLog_v1</p></section>
-</main><script src="js/common.js"></script><script>
+</main><script src="js/common.js?v=4.4.1"></script><script>
 const PREF_KEY='threeCushionPreferences_v1';function prefs(){try{return JSON.parse(localStorage.getItem(PREF_KEY))||{}}catch{return{}}}
 function savePreferences(){localStorage.setItem(PREF_KEY,JSON.stringify({defaultTarget:Number(defaultTarget.value)||30,defaultVenue:defaultVenue.value.trim()}));alert('設定已儲存')}
 function refresh(){const raw=localStorage.getItem(STORAGE_KEY)||'[]';gameCount.textContent=loadHistory().length;dataSize.textContent=(new Blob([raw]).size/1024).toFixed(1)+' KB'}
