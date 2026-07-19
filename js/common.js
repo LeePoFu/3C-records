@@ -1,6 +1,15 @@
 const STORAGE_KEY="threeCushionTrainingLog_v1";
-function loadHistory(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch(e){return[]}}
-function saveHistory(h){localStorage.setItem(STORAGE_KEY,JSON.stringify(h))}
+function loadHistory(){
+  try{
+    const parsed=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
+    return dedupeGameRecords(Array.isArray(parsed)?parsed:[]);
+  }catch(e){
+    return[];
+  }
+}
+function saveHistory(h){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(dedupeGameRecords(Array.isArray(h)?h:[])));
+}
 function escapeHTML(t){return String(t??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
 function nowFields(){const n=new Date(),p=x=>String(x).padStart(2,"0"),d=document.getElementById("gameDate"),t=document.getElementById("gameTime");if(d)d.value=`${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}`;if(t)t.value=`${p(n.getHours())}:${p(n.getMinutes())}`}
 function stats(scores){const f=(scores||[]).filter(x=>x.points!==""&&x.points!=null),totalPoints=f.reduce((s,x)=>s+Number(x.points),0),totalShots=f.length,avg=totalShots?totalPoints/totalShots:0,highRun=f.length?Math.max(...f.map(x=>Number(x.points))):0,zeroShots=f.filter(x=>Number(x.points)===0).length;return{totalPoints,totalShots,avg:Number(avg.toFixed(3)),highRun,zeroShots,zeroRate:totalShots?zeroShots/totalShots:0}}
@@ -128,4 +137,73 @@ function rhythmByActivity(games){
     const analysis=rhythmAnalysis((games||[]).filter(game=>game.activityType===activityType));
     return{activityType,...analysis};
   }).filter(item=>item.count>0);
+}
+
+function normalizeParticipantRecord(participant){
+  const startingScore=Number(participant?.startingScore||0);
+  const totalPoints=Number(participant?.totalPoints||0);
+  const earnedPoints=participant?.earnedPoints!==undefined
+    ?Number(participant.earnedPoints||0)
+    :Math.max(0,totalPoints-startingScore);
+  const totalShots=Number(participant?.totalShots||participant?.scores?.length||0);
+
+  return{
+    ...participant,
+    startingScore,
+    earnedPoints,
+    totalPoints,
+    totalShots,
+    highRun:Number(participant?.highRun||0),
+    avg:participant?.avg!==undefined
+      ?Number(participant.avg||0)
+      :(totalShots?earnedPoints/totalShots:0),
+    scores:Array.isArray(participant?.scores)?participant.scores:[]
+  };
+}
+
+function normalizeGameRecord(game){
+  if(!game||typeof game!=='object')return game;
+
+  const participants=Array.isArray(game.participants)
+    ?game.participants.map(normalizeParticipantRecord)
+    :[];
+
+  const self=participants.find(p=>p.role==='self');
+  const opponent=participants.find(p=>p.role==='opponent');
+
+  let duelResult=game.duelResult;
+  if(!duelResult&&self&&opponent){
+    duelResult={
+      selfStartingScore:self.startingScore,
+      opponentStartingScore:opponent.startingScore,
+      selfEarnedPoints:self.earnedPoints,
+      opponentEarnedPoints:opponent.earnedPoints,
+      selfScore:self.totalPoints,
+      opponentScore:opponent.totalPoints,
+      outcome:self.totalPoints>opponent.totalPoints?'勝':self.totalPoints<opponent.totalPoints?'敗':'和'
+    };
+  }
+
+  return{
+    ...game,
+    source:game.source||'records',
+    externalMatchId:game.externalMatchId||(game.source==='ipad-scoreboard'?game.id:null),
+    participants,
+    duelResult,
+    totalPoints:game.totalPoints!==undefined?Number(game.totalPoints||0):(self?.earnedPoints||0),
+    totalShots:game.totalShots!==undefined?Number(game.totalShots||0):(self?.totalShots||0),
+    avg:game.avg!==undefined?Number(game.avg||0):(self?.avg||0),
+    highRun:game.highRun!==undefined?Number(game.highRun||0):(self?.highRun||0)
+  };
+}
+
+function dedupeGameRecords(games){
+  const seen=new Set();
+  return (games||[]).map(normalizeGameRecord).filter(game=>{
+    const key=game?.externalMatchId||game?.id;
+    if(!key)return true;
+    if(seen.has(key))return false;
+    seen.add(key);
+    return true;
+  });
 }
