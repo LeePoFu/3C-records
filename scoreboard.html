@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<title>比賽計分｜3C Studio</title>
+<style>
+:root{--bg:#08111f;--panel:#111c2e;--line:#26364d;--text:#f8fafc;--muted:#94a3b8;--green:#0f766e;--danger:#b91c1c}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;touch-action:manipulation;-webkit-user-select:none;user-select:none}button,input,select{font:inherit}.hidden{display:none!important}
+.setup{min-height:100vh;padding:28px;display:flex;align-items:center;justify-content:center}.setup-card{width:min(760px,100%);background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:28px}h1{margin:0 0 8px;font-size:2rem}.sub{color:var(--muted);margin-bottom:24px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}label{display:block;font-weight:800;margin-bottom:8px}input,select{width:100%;height:58px;border-radius:16px;border:1px solid var(--line);background:#0c1626;color:#fff;padding:0 16px;font-size:1.05rem}.start-btn{margin-top:22px;width:100%;height:66px;border:0;border-radius:18px;background:linear-gradient(135deg,#14b8a6,#0f766e);color:white;font-weight:900;font-size:1.2rem}
+.scoreboard{min-height:100vh;display:grid;grid-template-rows:auto 1fr auto;gap:14px;padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}.topbar{min-height:74px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:12px 18px}.top-left,.top-right{display:flex;gap:22px;align-items:center}.top-right{justify-content:flex-end}.top-stat{text-align:center}.top-label{font-size:.78rem;color:var(--muted);font-weight:800}.top-value{font-size:1.3rem;font-weight:900;margin-top:2px}.title{text-align:center;font-size:1.1rem;font-weight:900;letter-spacing:.08em}
+.players{min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:14px}.player{position:relative;min-width:0;border-radius:28px;padding:18px;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;border:5px solid transparent;transition:.18s}.player.white{background:#f8fafc;color:#0f172a}.player.yellow{background:#facc15;color:#111827}.player.active{border-color:#2dd4bf;box-shadow:0 0 0 4px rgba(45,212,191,.16),0 18px 50px rgba(0,0,0,.22)}.player-badge{position:absolute;top:14px;right:14px;padding:7px 12px;border-radius:999px;background:#0f766e;color:white;font-size:.82rem;font-weight:900}.player-header{display:flex;align-items:center;gap:14px}.ball{width:48px;height:48px;border-radius:50%;border:3px solid rgba(15,23,42,.22);box-shadow:inset -7px -8px 14px rgba(0,0,0,.12)}.ball.white-ball{background:white}.ball.yellow-ball{background:#fde047}.player-name{font-size:1.55rem;font-weight:900}.player-target{font-size:.9rem;opacity:.68;margin-top:2px}.score-area{display:flex;align-items:center;justify-content:center;flex-direction:column}.score{font-size:clamp(7rem,19vh,13rem);font-weight:950;line-height:.9;letter-spacing:-.06em}.run-line{margin-top:12px;font-size:1.05rem;font-weight:800;opacity:.74}.player-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.score-btn{min-height:82px;border:0;border-radius:20px;font-size:2rem;font-weight:950}.plus{background:#0f766e;color:white}.minus{background:#cbd5e1;color:#0f172a}.yellow .minus{background:#111827;color:white}
+.bottom{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:12px}.control{min-height:68px;border:0;border-radius:18px;color:white;font-weight:900;font-size:1.05rem}.pause{background:#334155}.switch{background:linear-gradient(135deg,#f59e0b,#d97706);color:#111827;font-size:1.2rem}.finish{background:#b91c1c}
+.result-overlay{position:fixed;inset:0;z-index:50;background:rgba(2,6,23,.82);display:flex;align-items:center;justify-content:center;padding:24px}.result-card{width:min(900px,100%);max-height:92vh;overflow:auto;background:#fff;color:#0f172a;border-radius:28px;padding:26px}.result-title{text-align:center;font-size:2rem;font-weight:950}.result-score{text-align:center;font-size:3.8rem;font-weight:950;margin:10px 0 20px}.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.stat-panel{border:1px solid #dbe4ef;border-radius:20px;padding:18px;background:#f8fafc}.stat-panel.yellow-stat{background:#fef9c3}.stat-name{font-size:1.25rem;font-weight:900;margin-bottom:12px}.stat-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #dbe4ef}.stat-row:last-child{border-bottom:0}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}.result-actions button{height:60px;border:0;border-radius:16px;font-weight:900}.sync-records{background:#2563eb;color:white}.new-game{background:#0f766e;color:white}.close-result{background:#e2e8f0;color:#0f172a}
+@media(max-width:820px) and (orientation:portrait){.scoreboard{grid-template-rows:auto auto auto}.players{grid-template-columns:1fr}.player{min-height:360px}.score{font-size:7rem}}@media(max-width:620px){.setup{padding:16px}.setup-card{padding:20px}.form-grid{grid-template-columns:1fr}.topbar{grid-template-columns:1fr 1fr}.title{display:none}.players{gap:8px}.player{padding:12px;border-radius:22px}.player-name{font-size:1.15rem}.ball{width:38px;height:38px}.score{font-size:6rem}.score-btn{min-height:68px}.bottom{grid-template-columns:1fr 1fr}.switch{grid-column:1/-1;grid-row:1}.stats-grid{grid-template-columns:1fr}}
+
+.remaining{margin-top:12px;display:inline-flex;align-items:center;justify-content:center;padding:9px 16px;border-radius:999px;font-size:1.08rem;font-weight:950;background:#f59e0b;color:#111827;box-shadow:0 0 0 4px rgba(245,158,11,.16);animation:endgamePulse 1.8s ease-in-out infinite}.high-run-line{margin-top:8px;font-size:.95rem;font-weight:850;opacity:.7}.player.endgame{box-shadow:0 0 0 5px rgba(245,158,11,.32),0 18px 50px rgba(0,0,0,.22)}@keyframes endgamePulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.035);opacity:.82}}.bottom{grid-template-columns:1fr 1.3fr 1fr 1fr}.undo{background:#475569}@media(max-width:620px){.bottom{grid-template-columns:1fr 1fr}.switch{grid-column:1/-1;grid-row:1}}
+
+.bottom-secondary .finish{grid-column:1/-1}
+}
+
+
+/* ===== v1.3 Layout Refinement ===== */
+.player{
+  grid-template-rows:auto 1fr auto;
+}
+.score-controls-wrap{
+  display:grid;
+  gap:10px;
+}
+.player-controls{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.player-controls .score-btn{
+  width:100%;
+  min-width:0;
+  min-height:76px;
+}
+.quick-score-row{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+.quick-score-row button{
+  width:100%;
+  min-width:0;
+  min-height:52px;
+  border:0;
+  border-radius:15px;
+  background:#e2e8f0;
+  color:#0f172a;
+  font-size:1.15rem;
+  font-weight:950;
+}
+.yellow .quick-score-row button{
+  background:rgba(255,255,255,.76);
+}
+.quick-score-row button:active,
+.score-btn:active,
+.control:active{
+  transform:scale(.985);
+}
+.bottom{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+}
+.bottom .control{
+  width:100%;
+  min-width:0;
+  min-height:66px;
+  border-radius:18px;
+  font-size:1.02rem;
+}
+.bottom .switch{
+  background:linear-gradient(135deg,#f59e0b,#d97706);
+  color:#111827;
+  font-size:1.08rem;
+}
+.bottom .finish{
+  background:#fff;
+  color:#b91c1c;
+  border:3px solid #b91c1c;
+}
+.bottom .pause{background:#334155}
+.bottom .undo{background:#475569}
+
+@media(max-width:920px){
+  .score-btn{min-height:70px!important}
+  .quick-score-row button{min-height:48px}
+  .bottom .control{min-height:60px;font-size:.95rem}
+}
+@media(max-width:820px) and (orientation:portrait){
+  .bottom{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:620px){
+  .quick-score-row{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .bottom{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+
+.bottom.white-turn #pauseBtn{order:1}
+.bottom.white-turn #switchBtn{order:2}
+.bottom.white-turn #undoBtn{order:3}
+.bottom.white-turn #finishBtn{order:4}
+.bottom.yellow-turn #pauseBtn{order:1}
+.bottom.yellow-turn #undoBtn{order:2}
+.bottom.yellow-turn #switchBtn{order:3}
+.bottom.yellow-turn #finishBtn{order:4}
+.sync-status{
+  margin-top:18px;
+  padding:14px 16px;
+  border-radius:16px;
+  background:#ecfdf5;
+  border:1px solid #a7f3d0;
+  color:#065f46;
+  font-weight:850;
+  line-height:1.55;
+}
+.sync-status.error{
+  background:#fef2f2;
+  border-color:#fecaca;
+  color:#991b1b;
+}
+</style>
+</head>
+<body>
+<section class="setup" id="setup"><div class="setup-card"><h1>3C Studio｜比賽計分</h1><div class="sub">比賽結束後直接存入同一個 Records，不需同步或匯入。</div><div class="form-grid"><div><label>白球球員姓名</label><input id="whiteName" value="白球球員"></div><div><label>黃球球員姓名</label><input id="yellowName" value="黃球球員"></div><div><label>目標分數</label><input id="targetInput" type="number" min="1" value="30"></div><div><label>先攻球員</label><select id="starterInput"><option value="white">白球</option><option value="yellow">黃球</option></select></div><div><label>白球起始分數／讓分</label><input id="whiteStart" type="number" min="0" value="0"></div><div><label>黃球起始分數／讓分</label><input id="yellowStart" type="number" min="0" value="0"></div>
+      <div>
+        <label>這場比賽中，我是哪一方？</label>
+        <select id="selfSideInput">
+          <option value="white" selected>白球球員是我</option>
+          <option value="yellow">黃球球員是我</option>
+          <option value="none">不指定我方，不加入個人 Records</option>
+        </select>
+      </div>
+      <div><label>End Game 剩餘分數提醒</label><select id="endGameThreshold"><option value="0">不顯示</option><option value="3">剩 3 分開始</option><option value="5" selected>剩 5 分開始</option><option value="999">全程顯示</option></select></div></div><button class="start-btn" onclick="startGame()">開始比賽</button><a href="index.html" style="display:block;text-align:center;margin-top:14px;color:#94a3b8;font-weight:800;text-decoration:none">← 返回 3C Studio 首頁</a></div></section>
+<section class="scoreboard hidden" id="scoreboard"><div class="topbar"><div class="top-left"><a href="index.html" aria-label="回首頁" style="color:#f8fafc;text-decoration:none;font-weight:950;font-size:1.1rem">⌂</a><div class="top-stat"><div class="top-label">經過時間</div><div class="top-value" id="elapsed">00:00</div></div><div class="top-stat"><div class="top-label">目前 INN</div><div class="top-value" id="inning">1</div></div></div><div class="title">3-CUSHION SCOREBOARD</div><div class="top-right"><div class="top-stat"><div class="top-label">目標分數</div><div class="top-value" id="targetDisplay">30</div></div><div class="top-stat"><div class="top-label">目前球員</div><div class="top-value" id="activeName">—</div></div></div></div>
+<div class="players"><article class="player white" id="whitePanel">
+      <div class="player-badge hidden" id="whiteActive">目前出杆</div>
+      <div class="player-header">
+        <div class="ball white-ball"></div>
+        <div>
+          <div class="player-name" id="whiteNameDisplay"></div>
+          <div class="player-target">白球 · 目標 <span id="whiteTarget"></span></div>
+        </div>
+      </div>
+
+      <div class="score-area">
+        <div class="score" id="whiteScore">0</div>
+        <div class="remaining hidden" id="whiteRemaining">剩 0</div>
+        <div class="run-line">本杆目前連得 <span id="whiteRun">0</span></div>
+        <div class="high-run-line">High Run <span id="whiteHighRun">0</span></div>
+      </div>
+
+      <div class="score-controls-wrap">
+        <div class="player-controls">
+          <button class="score-btn plus" onclick="changeScore('white',1)">+1</button>
+          <button class="score-btn minus" onclick="changeScore('white',-1)">−1</button>
+        </div>
+        <div class="quick-score-row">
+          <button onclick="changeScore('white',2)">+2</button>
+          <button onclick="changeScore('white',3)">+3</button>
+          <button onclick="changeScore('white',4)">+4</button>
+          <button onclick="changeScore('white',5)">+5</button>
+        </div>
+      </div>
+    </article>
+<article class="player yellow" id="yellowPanel">
+      <div class="player-badge hidden" id="yellowActive">目前出杆</div>
+      <div class="player-header">
+        <div class="ball yellow-ball"></div>
+        <div>
+          <div class="player-name" id="yellowNameDisplay"></div>
+          <div class="player-target">黃球 · 目標 <span id="yellowTarget"></span></div>
+        </div>
+      </div>
+
+      <div class="score-area">
+        <div class="score" id="yellowScore">0</div>
+        <div class="remaining hidden" id="yellowRemaining">剩 0</div>
+        <div class="run-line">本杆目前連得 <span id="yellowRun">0</span></div>
+        <div class="high-run-line">High Run <span id="yellowHighRun">0</span></div>
+      </div>
+
+      <div class="score-controls-wrap">
+        <div class="player-controls">
+          <button class="score-btn plus" onclick="changeScore('yellow',1)">+1</button>
+          <button class="score-btn minus" onclick="changeScore('yellow',-1)">−1</button>
+        </div>
+        <div class="quick-score-row">
+          <button onclick="changeScore('yellow',2)">+2</button>
+          <button onclick="changeScore('yellow',3)">+3</button>
+          <button onclick="changeScore('yellow',4)">+4</button>
+          <button onclick="changeScore('yellow',5)">+5</button>
+        </div>
+      </div>
+    </article></div>
+<div class="bottom" id="bottomControls">
+    <button class="control pause" id="pauseBtn" onclick="togglePause()">⏸ 暫停</button>
+    <button class="control switch" id="switchBtn" onclick="switchPlayer()">換人 →</button>
+    <button class="control undo" id="undoBtn" onclick="undoLast()">↶ 上一步</button>
+    <button class="control finish" id="finishBtn" onclick="finishGame()">結束比賽</button>
+  </div>
+</section>
+<section class="result-overlay hidden" id="resultOverlay"><div class="result-card"><div class="result-title">比賽結果</div><div class="result-score" id="resultScore"></div><div class="stats-grid" id="statsGrid"></div><div class="sync-status hidden" id="syncStatus"></div><div class="result-actions">
+      <button class="new-game" onclick="newGame()">開始新比賽</button>
+      <button class="close-result" onclick="resultOverlay.classList.add('hidden')">返回計分板</button>
+    </div></div></section>
+<script>
+const SCOREBOARD_KEY='threeCushionIPadScoreboardHistory_v1';
+const RECORDS_KEY='threeCushionTrainingLog_v1';
+let latestRecordsGame=null;
+
+let state=null;
+let timer=null;
+let undoStack=[];
+
+function blankPlayer(name,start){
+  return{
+    name,
+    startScore:start,
+    score:start,
+    run:0,
+    turns:0,
+    runs:[],
+    highRun:0,
+    zeroTurns:0,
+    scoringTurns:0
+  };
+}
+
+function startGame(){
+  const target=Math.max(1,Number(targetInput.value)||30);
+  const starter=starterInput.value;
+  const now=Date.now();
+
+  state={
+    matchId:'scoreboard-'+now+'-'+Math.random().toString(36).slice(2,8),
+    target,
+    endGameThreshold:Number(endGameThreshold.value)||0,
+    selfSide:selfSideInput.value,
+    starter,
+    active:starter,
+    inning:1,
+    startedAt:now,
+    paused:false,
+    pausedAt:0,
+    totalPausedMs:0,
+    white:blankPlayer(whiteName.value.trim()||'白球球員',Math.max(0,Number(whiteStart.value)||0)),
+    yellow:blankPlayer(yellowName.value.trim()||'黃球球員',Math.max(0,Number(yellowStart.value)||0)),
+    history:[]
+  };
+
+  undoStack=[];
+  setup.classList.add('hidden');
+  scoreboard.classList.remove('hidden');
+  clearInterval(timer);
+  timer=setInterval(render,250);
+  render();
+}
+
+function activeElapsedMs(){
+  if(!state)return 0;
+  const end=state.paused?state.pausedAt:Date.now();
+  return Math.max(0,end-state.startedAt-state.totalPausedMs);
+}
+
+function fmt(ms){
+  const total=Math.floor(ms/1000);
+  const m=Math.floor(total/60);
+  const sec=total%60;
+  return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+function snapshotState(){
+  if(!state)return;
+  undoStack.push(JSON.parse(JSON.stringify(state)));
+  if(undoStack.length>30)undoStack.shift();
+}
+
+function undoLast(){
+  if(!state||state.paused||!undoStack.length)return;
+  state=undoStack.pop();
+  render();
+}
+
+function changeScore(side,delta){
+  if(!state||state.paused||state.active!==side)return;
+  snapshotState();
+
+  const p=state[side];
+  const nextRun=Math.max(0,p.run+delta);
+  const actualDelta=nextRun-p.run;
+  p.run=nextRun;
+  p.score=Math.max(p.startScore,p.score+actualDelta);
+  render();
+}
+
+function switchPlayer(){
+  if(!state||state.paused)return;
+  snapshotState();
+
+  const side=state.active;
+  const p=state[side];
+
+  p.turns+=1;
+  p.runs.push(p.run);
+  p.highRun=Math.max(p.highRun,p.run);
+  if(p.run===0)p.zeroTurns+=1;
+  else p.scoringTurns+=1;
+
+  state.history.push({
+    inning:state.inning,
+    player:side,
+    playerName:p.name,
+    run:p.run,
+    cumulative:p.score,
+    elapsedSeconds:Math.round(activeElapsedMs()/1000)
+  });
+
+  p.run=0;
+  const next=side==='white'?'yellow':'white';
+  state.active=next;
+
+  if(next===state.starter)state.inning+=1;
+
+  render();
+
+  if(state.white.score>=state.target||state.yellow.score>=state.target){
+    setTimeout(()=>finishGame(true),100);
+  }
+}
+
+function togglePause(){
+  if(!state)return;
+  snapshotState();
+
+  if(!state.paused){
+    state.paused=true;
+    state.pausedAt=Date.now();
+  }else{
+    state.totalPausedMs+=Date.now()-state.pausedAt;
+    state.paused=false;
+    state.pausedAt=0;
+  }
+  render();
+}
+
+function playerStats(p){
+  const earned=p.score-p.startScore;
+  const avg=p.turns?earned/p.turns:0;
+  return{
+    earned,
+    avg,
+    scoringRate:p.turns?p.scoringTurns/p.turns:0,
+    zeroRate:p.turns?p.zeroTurns/p.turns:0
+  };
+}
+
+function buildScoreboardRecord(){
+  const w=playerStats(state.white);
+  const y=playerStats(state.yellow);
+  return{
+    id:state.matchId,
+    date:new Date().toISOString(),
+    target:state.target,
+    durationSeconds:Math.round(activeElapsedMs()/1000),
+    totalPausedSeconds:Math.round(state.totalPausedMs/1000),
+    inning:state.inning,
+    starter:state.starter,
+    selfSide:state.selfSide,
+    white:{...state.white,...w},
+    yellow:{...state.yellow,...y},
+    history:state.history
+  };
+}
+
+function participantForRecords(side,role,record){
+  const p=record[side];
+  return{
+    name:role==='self'?'我':p.name,
+    displayName:p.name,
+    role,
+    startingScore:Number(p.startScore||0),
+    earnedPoints:Number(p.earned||0),
+    totalPoints:Number(p.score||0),
+    totalShots:Number(p.turns||0),
+    highRun:Number(p.highRun||0),
+    avg:Number(p.avg||0),
+    scores:(p.runs||[]).map((points,index)=>({
+      inn:index+1,
+      points:Number(points||0),
+      playerName:role==='self'?'我':p.name,
+      elapsedSeconds:null,
+      inningTimeSeconds:null,
+      shotTimeSeconds:null
+    }))
+  };
+}
+
+function buildRecordsGame(record){
+  const selfSide=state.selfSide;
+  if(selfSide==='none')return null;
+
+  const opponentSide=selfSide==='white'?'yellow':'white';
+  const self=record[selfSide];
+  const opponent=record[opponentSide];
+
+  const selfParticipant=participantForRecords(selfSide,'self',record);
+  const opponentParticipant=participantForRecords(opponentSide,'opponent',record);
+
+  return{
+    id:state.matchId,
+    externalMatchId:state.matchId,
+    source:'ipad-scoreboard',
+    sourceVersion:'1.4',
+    importedFromScoreboard:true,
+    date:new Date().toISOString().slice(0,10),
+    createdAt:new Date().toISOString(),
+    activityType:'正式比賽',
+    inputMode:'run-total',
+    targetScore:record.target,
+    totalGameSeconds:record.durationSeconds,
+    durationSeconds:record.durationSeconds,
+    totalPausedSeconds:record.totalPausedSeconds,
+    targetCompleted:self.score>=record.target||opponent.score>=record.target,
+    activityMeta:{
+      competitionName:'iPad Scoreboard',
+      selfName:'我',
+      selfDisplayName:self.name,
+      opponentName:opponent.name,
+      starterName:state.starter===selfSide?'我':opponent.name,
+      selfStartingScore:Number(self.startScore||0),
+      opponentStartingScore:Number(opponent.startScore||0)
+    },
+    participants:[selfParticipant,opponentParticipant],
+    duelResult:{
+      selfStartingScore:Number(self.startScore||0),
+      opponentStartingScore:Number(opponent.startScore||0),
+      selfEarnedPoints:Number(self.earned||0),
+      opponentEarnedPoints:Number(opponent.earned||0),
+      selfScore:Number(self.score||0),
+      opponentScore:Number(opponent.score||0),
+      outcome:self.score>opponent.score?'勝':self.score<opponent.score?'敗':'和'
+    },
+    totalPoints:selfParticipant.earnedPoints,
+    totalShots:selfParticipant.totalShots,
+    avg:selfParticipant.avg,
+    highRun:selfParticipant.highRun,
+    scores:selfParticipant.scores,
+    actionTimingEvents:[]
+  };
+}
+
+function syncToRecords(record){
+  const game=buildRecordsGame(record);
+  if(!game){
+    return{synced:false,message:'未指定我方，因此只保存 Scoreboard 紀錄。'};
+  }
+
+  let games=[];
+  try{
+    games=JSON.parse(localStorage.getItem(RECORDS_KEY)||'[]');
+  }catch{
+    games=[];
+  }
+  if(!Array.isArray(games))games=[];
+
+  const exists=games.some(item=>
+    item?.externalMatchId===game.externalMatchId ||
+    item?.id===game.externalMatchId
+  );
+
+  if(exists){
+    return{synced:false,message:'此比賽已存在於 Training Records，未重複同步。'};
+  }
+
+  games.push(game);
+  localStorage.setItem(RECORDS_KEY,JSON.stringify(games));
+  return{synced:true,message:'已直接存入 Records。'};
+}
+
+
+
+function finishGame(auto=false){
+  if(!state)return;
+  if(!auto&&!confirm('確定要結束這場比賽嗎？'))return;
+
+  if(state[state.active].run>0){
+    const p=state[state.active];
+    p.turns+=1;
+    p.runs.push(p.run);
+    p.highRun=Math.max(p.highRun,p.run);
+    p.scoringTurns+=1;
+    state.history.push({
+      inning:state.inning,
+      player:state.active,
+      playerName:p.name,
+      run:p.run,
+      cumulative:p.score,
+      elapsedSeconds:Math.round(activeElapsedMs()/1000)
+    });
+    p.run=0;
+  }
+
+  const record=buildScoreboardRecord();
+  const winner=state.white.score===state.yellow.score
+    ?'和局'
+    :state.white.score>state.yellow.score
+      ?state.white.name
+      :state.yellow.name;
+
+  resultScore.textContent=`${state.white.score} ： ${state.yellow.score}｜${winner==='和局'?'和局':winner+' 勝'}`;
+  statsGrid.innerHTML=
+    statHTML(state.white,playerStats(state.white),'white')+
+    statHTML(state.yellow,playerStats(state.yellow),'yellow');
+
+  let saved=[];
+  try{
+    saved=JSON.parse(localStorage.getItem(SCOREBOARD_KEY)||'[]');
+  }catch{
+    saved=[];
+  }
+  if(!Array.isArray(saved))saved=[];
+
+  const alreadySaved=saved.some(item=>item.id===record.id);
+  if(!alreadySaved){
+    saved.push(record);
+    localStorage.setItem(SCOREBOARD_KEY,JSON.stringify(saved));
+  }
+
+  latestRecordsGame=buildRecordsGame(record);
+  try{
+    const result=syncToRecords(record);
+    syncStatus.classList.remove('hidden','error');
+    syncStatus.innerHTML=`✓ 已保存比賽紀錄<br>${result.synced?'✓':'•'} ${result.message}<br><small><a href="history.html" style="color:inherit;font-weight:950">查看歷史紀錄 →</a></small>`;
+  }catch(error){
+    syncStatus.classList.remove('hidden');
+    syncStatus.classList.add('error');
+    syncStatus.textContent='Scoreboard 紀錄已保存，但同步到 Training Records 時發生錯誤。';
+  }
+
+  resultOverlay.classList.remove('hidden');
+}
+
+function statHTML(p,s,side){
+  return `<div class="stat-panel ${side==='yellow'?'yellow-stat':''}">
+    <div class="stat-name">${p.name}</div>
+    <div class="stat-row"><span>最終分數</span><strong>${p.score}</strong></div>
+    <div class="stat-row"><span>實際得分</span><strong>${s.earned}</strong></div>
+    <div class="stat-row"><span>出杆次數</span><strong>${p.turns}</strong></div>
+    <div class="stat-row"><span>AVG</span><strong>${s.avg.toFixed(3)}</strong></div>
+    <div class="stat-row"><span>High Run</span><strong>${p.highRun}</strong></div>
+    <div class="stat-row"><span>得分率</span><strong>${(s.scoringRate*100).toFixed(1)}%</strong></div>
+    <div class="stat-row"><span>0分率</span><strong>${(s.zeroRate*100).toFixed(1)}%</strong></div>
+  </div>`;
+}
+
+function render(){
+  if(!state)return;
+
+  elapsed.textContent=fmt(activeElapsedMs());
+  inning.textContent=state.inning;
+  targetDisplay.textContent=state.target;
+  activeName.textContent=state[state.active].name;
+
+  whiteNameDisplay.textContent=state.white.name;
+  yellowNameDisplay.textContent=state.yellow.name;
+  whiteTarget.textContent=state.target;
+  yellowTarget.textContent=state.target;
+  whiteScore.textContent=state.white.score;
+  yellowScore.textContent=state.yellow.score;
+  whiteRun.textContent=state.white.run;
+  yellowRun.textContent=state.yellow.run;
+  whiteHighRun.textContent=Math.max(state.white.highRun,state.white.run);
+  yellowHighRun.textContent=Math.max(state.yellow.highRun,state.yellow.run);
+
+  const whiteLeft=Math.max(0,state.target-state.white.score);
+  const yellowLeft=Math.max(0,state.target-state.yellow.score);
+  const threshold=Number(state.endGameThreshold)||0;
+  const showWhite=threshold===999||(threshold>0&&whiteLeft>0&&whiteLeft<=threshold);
+  const showYellow=threshold===999||(threshold>0&&yellowLeft>0&&yellowLeft<=threshold);
+
+  whiteRemaining.textContent='剩 '+whiteLeft;
+  yellowRemaining.textContent='剩 '+yellowLeft;
+  whiteRemaining.classList.toggle('hidden',!showWhite);
+  yellowRemaining.classList.toggle('hidden',!showYellow);
+  whitePanel.classList.toggle('endgame',showWhite);
+  yellowPanel.classList.toggle('endgame',showYellow);
+
+  whitePanel.classList.toggle('active',state.active==='white');
+  yellowPanel.classList.toggle('active',state.active==='yellow');
+  whiteActive.classList.toggle('hidden',state.active!=='white');
+  yellowActive.classList.toggle('hidden',state.active!=='yellow');
+
+  pauseBtn.textContent=state.paused?'▶ 繼續':'⏸ 暫停';
+  undoBtn.disabled=!undoStack.length||state.paused;
+  undoBtn.style.opacity=undoBtn.disabled?'.45':'1';
+
+  bottomControls.classList.toggle('white-turn',state.active==='white');
+  bottomControls.classList.toggle('yellow-turn',state.active==='yellow');
+
+  const nextSide=state.active==='white'?'yellow':'white';
+  switchBtn.textContent=state.active==='white'
+    ?`換 ${state[nextSide].name} →`
+    :`← 換 ${state[nextSide].name}`;
+}
+
+function newGame(){
+  clearInterval(timer);
+  resultOverlay.classList.add('hidden');
+  syncStatus.classList.add('hidden');
+  scoreboard.classList.add('hidden');
+  setup.classList.remove('hidden');
+  state=null;
+  undoStack=[];
+}
+</script></body></html>

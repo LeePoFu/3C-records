@@ -1,8 +1,8 @@
 <!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="css/style.css"><title>歷史</title></head><body>
 <header><div class="wrap"><h1>歷史紀錄</h1></div></header>
-<nav><div class="nav"><a href="index.html">首頁</a><a href="game.html">新局</a><a class="active" href="history.html">歷史</a><a href="analytics.html">分析</a><a href="settings.html">設定</a></div></nav>
+<nav><div class="nav"><a href="index.html">首頁</a><a href="game.html">練習記錄</a><a href="scoreboard.html">比賽計分</a><a class="active" href="history.html">歷史</a><a href="analytics.html">分析</a><a href="settings.html">設定</a></div></nav>
 <main><section class="card"><div class="table"><table><thead><tr><th>#</th><th>日期</th><th>活動</th><th>得分/目標</th><th>杆數</th><th>AVG</th><th>平均單次時間</th><th>操作</th></tr></thead><tbody id="tb"></tbody></table></div></section></main>
-<script src="js/common.js?v=4.4.1"></script><script>
+<script src="js/common.js?v=5.0"></script><script>
 function render(){const x=loadHistory();tb.innerHTML=x.length?x.slice().reverse().map((v,i)=>{const j=x.length-1-i,t=rhythmAnalysis([v]);return`<tr><td>${j+1}</td><td>${escapeHTML(v.date||'')}</td><td>${escapeHTML(v.activityType||'')}</td><td>${v.duelResult?`${v.duelResult.selfScore}－${v.duelResult.opponentScore}`:(v.activityType==='多人追分'?'個別統計':((v.totalPoints??0)+'/'+(v.targetScore||'-')))}</td><td>${(v.activityType==='多人追分'||v.duelResult)?(v.scores||[]).length:(v.totalShots||0)}</td><td>${v.duelResult?v.duelResult.outcome:(v.activityType==='多人追分'?'—':Number(v.avg||0).toFixed(3))}</td><td>${t.count?t.avg.toFixed(1)+'秒':'—'}</td><td><button class="danger" onclick="del(${j})">刪除</button></td></tr>`}).join(''):'<tr><td colspan="8">尚無紀錄</td></tr>'}
 function del(i){if(confirm('刪除此局？')){const x=loadHistory();x.splice(i,1);saveHistory(x);render()}}render();
 </script></body></html>

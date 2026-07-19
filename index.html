@@ -1,19 +1,19 @@
 <!doctype html><html lang="zh-Hant"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <link rel="manifest" href="manifest.json"><link rel="stylesheet" href="css/style.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><title>3-Cushion Professional</title></head><body>
-<header><div class="wrap"><h1>3-Cushion Professional</h1><div class="sub">你的三顆星訓練與對戰中心</div></div></header>
-<nav><div class="nav"><a class="active" href="index.html">首頁</a><a href="game.html">新局</a><a href="history.html">歷史</a><a href="analytics.html">分析</a><a href="settings.html">設定</a></div></nav>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script><title>3C Studio</title></head><body>
+<header><div class="wrap"><h1>3C Studio</h1><div class="sub">練習、比賽計分、歷史與分析</div></div></header>
+<nav><div class="nav"><a class="active" href="index.html">首頁</a><a href="game.html">練習記錄</a><a href="scoreboard.html">比賽計分</a><a href="history.html">歷史</a><a href="analytics.html">分析</a><a href="settings.html">設定</a></div></nav>
 <main>
 <section class="card"><div class="dashboard-hero">
-<div class="hero-main"><div>累積局數</div><div class="hero-value" id="totalGames">0</div><a class="button-link light" style="margin-top:16px" href="game.html">開始新局</a></div>
+<div class="hero-main"><div>累積局數</div><div class="hero-value" id="totalGames">0</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px"><a class="button-link light" href="game.html">開始練習</a><a class="button-link light" href="scoreboard.html">開啟比賽計分</a></div></div>
 <div class="hero-side"><div class="metric"><div class="ml">總 AVG</div><div class="mv" id="overallAvg">0.000</div></div><div class="metric"><div class="ml">High Run</div><div class="mv" id="highRun">0</div></div></div>
 </div></section>
 <section class="card"><div class="section-title-row"><h2>近期狀態</h2><a class="mini-link" href="analytics.html">查看分析</a></div>
 <div class="metrics"><div class="metric"><div class="ml">最近10局 AVG</div><div class="mv" id="recentAvg">0.000</div></div><div class="metric"><div class="ml">平均單次擊球</div><div class="mv" id="singleShotAvg">—</div></div><div class="metric"><div class="ml">0分率</div><div class="mv" id="zeroRate">0.0%</div></div><div class="metric"><div class="ml">對戰勝率</div><div class="mv" id="winRate">0.0%</div></div></div></section>
 <section class="card"><h2>近20局 AVG 趨勢</h2><div class="chart-box"><canvas id="avgChart"></canvas></div></section>
 <section class="card"><div class="section-title-row"><h2>最近5局</h2><a class="mini-link" href="history.html">全部歷史</a></div><div class="table"><table><thead><tr><th>日期</th><th>類型</th><th>比分/得分</th><th>AVG/結果</th></tr></thead><tbody id="recentTable"></tbody></table></div></section>
-</main><script src="js/common.js?v=4.4.1"></script><script>
+</main><script src="js/common.js?v=5.0"></script><script>
 const games=loadHistory(),hs=historyStats(games),ra=runAnalysis(games),rhythm=rhythmAnalysis(games),duel=games.filter(g=>g.duelResult),wins=duel.filter(g=>g.duelResult.outcome==='勝').length;
 totalGames.textContent=hs.totalGames;overallAvg.textContent=Number(hs.avg||0).toFixed(3);recentAvg.textContent=Number(hs.recent10Avg||0).toFixed(3);highRun.textContent=hs.highRun;singleShotAvg.textContent=rhythm.count?rhythm.avg.toFixed(1)+'秒':'—';zeroRate.textContent=(ra.zeroRate*100).toFixed(1)+'%';winRate.textContent=(duel.length?wins/duel.length*100:0).toFixed(1)+'%';
 const last=games.slice(-20);new Chart(avgChart,{type:'line',data:{labels:last.map((_,i)=>games.length-last.length+i+1),datasets:[{data:last.map(g=>Number(g.avg||0)),tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
